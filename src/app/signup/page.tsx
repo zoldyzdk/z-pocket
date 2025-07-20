@@ -10,6 +10,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import Link from "next/link"
 import { useState, useTransition } from "react"
 import { useForm } from "react-hook-form"
+import { toast } from "sonner"
 import { z } from "zod"
 
 const signupSchema = z
@@ -55,23 +56,20 @@ export default function SignUp() {
   })
 
   const onSubmit = async (formData: SignupFormData) => {
-    startTransition(() => {
-      signup(formData)
+    startTransition(async () => {
+      try {
+        const result = await signup(formData)
+        toast.success(result.message)
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred"
+        toast.error(errorMessage)
+      }
     });
   }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted p-4">
       <div className="w-full max-w-md">
-        {/* Logo/Brand */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-black text-white font-bold text-xl mb-4">
-            S
-          </div>
-          <h1 className="text-2xl font-bold text-gray-900">Create Account</h1>
-          <p className="text-gray-600 mt-2">Join us and start your journey</p>
-        </div>
-
         <Card className="border-0 shadow-xl bg-white/80 backdrop-blur-sm">
           <CardHeader className="space-y-1 pb-6">
             <CardTitle className="text-xl font-semibold text-center">Sign Up</CardTitle>
@@ -166,10 +164,10 @@ export default function SignUp() {
 
               <Button
                 type="submit"
-                disabled={isSubmitting}
+                disabled={isPending}
                 className="w-full h-11 bg-black hover:bg-gray-800 text-white font-medium mt-6 disabled:opacity-50"
               >
-                {isSubmitting ? "Creating Account..." : "Create Account"}
+                {isPending ? "Creating Account..." : "Create Account"}
               </Button>
             </form>
 
