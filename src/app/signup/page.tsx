@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { zodResolver } from "@hookform/resolvers/zod"
 import Link from "next/link"
-import { useState, useTransition } from "react"
+import { useRouter } from "next/navigation"
+import { useTransition } from "react"
 import { useForm } from "react-hook-form"
 import { toast } from "sonner"
 import { z } from "zod"
@@ -39,7 +40,7 @@ const signupSchema = z
 export type SignupFormData = z.infer<typeof signupSchema>
 
 export default function SignUp() {
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
   const {
@@ -60,6 +61,9 @@ export default function SignUp() {
       try {
         const result = await signup(formData)
         toast.success(result.message)
+        setTimeout(() => {
+          router.push("/dashboard");
+        }, 2000) // Optional: Redirect or reset form after success
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred"
         toast.error(errorMessage)
