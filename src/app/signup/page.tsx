@@ -1,5 +1,6 @@
 "use client"
 
+import { signup } from "@/actions/signup"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -7,11 +8,10 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { zodResolver } from "@hookform/resolvers/zod"
 import Link from "next/link"
-import { useState } from "react"
+import { useState, useTransition } from "react"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 
-// Zod validation schema
 const signupSchema = z
   .object({
     name: z
@@ -35,10 +35,11 @@ const signupSchema = z
     path: ["confirmPassword"],
   })
 
-type SignupFormData = z.infer<typeof signupSchema>
+export type SignupFormData = z.infer<typeof signupSchema>
 
-export default function Component() {
+export default function SignUp() {
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isPending, startTransition] = useTransition();
 
   const {
     register,
@@ -53,17 +54,10 @@ export default function Component() {
     },
   })
 
-  const onSubmit = async (data: SignupFormData) => {
-    setIsSubmitting(true)
-    console.log('errors ---> ', errors)
-
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 2000))
-
-    console.log("Form submitted:", data)
-    alert("Account created successfully!")
-
-    setIsSubmitting(false)
+  const onSubmit = async (formData: SignupFormData) => {
+    startTransition(() => {
+      signup(formData)
+    });
   }
 
   return (
