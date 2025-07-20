@@ -1,38 +1,23 @@
-import * as schema from '@/db/schema';
+import { schema } from '@/db/schema';
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { createAuthClient } from "better-auth/react";
+import { nextCookies } from 'better-auth/next-js';
 import { db } from "../db";
-
-const { usersTable, sessions, accounts, verifications } = schema;
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
     provider: "sqlite",
-    schema: {
-      users: usersTable,
-      sessions: sessions,
-      accounts: accounts,
-      verifications: verifications,
-    },
+    schema: schema,
   }),
-  user: {
-    additionalFields: {
-      id: {
-        type: 'string',
-        defaultValue: () => crypto.randomUUID(),
-      }
-    }
-  },
   emailAndPassword: {
     enabled: true,
-    requireEmailVerification: false,
   },
+  plugins: [nextCookies()]
 })
 
 
-export const authClient = createAuthClient({
-  baseURL: process.env.NEXT_PUBLIC_BETTER_AUTH_URL || 'http://localhost:3000',
-});
+// export const authClient = createAuthClient({
+//   baseURL: process.env.NEXT_PUBLIC_BETTER_AUTH_URL || 'http://localhost:3000',
+// });
 
-export const { signIn, signOut, signUp, useSession } = authClient;
+// export const { signIn, signOut, signUp, useSession } = authClient;
