@@ -1,8 +1,8 @@
 import { sql } from 'drizzle-orm';
 import { integer, sqliteTable, text, } from 'drizzle-orm/sqlite-core';
 
-export const usersTable = sqliteTable('users', {
-  id: text('id').primaryKey().default(sql`(lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-4' || substr(lower(hex(randomblob(2))),2) || '-' || substr('89ab',abs(random()) % 4 + 1, 1) || substr(lower(hex(randomblob(2))),2) || '-' || lower(hex(randomblob(6))))`),
+export const user = sqliteTable('user', {
+  id: text('id').primaryKey(),
   name: text('name').notNull(),
   email: text('email').unique().notNull(),
   emailVerified: integer('emailVerified', { mode: 'boolean' }).default(false),
@@ -12,9 +12,9 @@ export const usersTable = sqliteTable('users', {
 });
 
 // better-auth required tables
-export const sessions = sqliteTable('sessions', {
+export const session = sqliteTable('session', {
   id: text('id').primaryKey(),
-  userId: text('userId').notNull().references(() => usersTable.id, { onDelete: 'cascade' }),
+  userId: text('userId').notNull().references(() => user.id, { onDelete: 'cascade' }),
   expiresAt: integer('expiresAt').notNull(),
   token: text('token').notNull(),
   createdAt: text('createdAt').default(sql`(datetime('now'))`),
@@ -23,9 +23,9 @@ export const sessions = sqliteTable('sessions', {
   userAgent: text('userAgent'),
 });
 
-export const accounts = sqliteTable('accounts', {
+export const account = sqliteTable('account', {
   id: text('id').primaryKey(),
-  userId: text('userId').notNull().references(() => usersTable.id, { onDelete: 'cascade' }),
+  userId: text('userId').notNull().references(() => user.id, { onDelete: 'cascade' }),
   accountId: text('accountId').notNull(),
   providerId: text('providerId').notNull(),
   accessToken: text('accessToken'),
@@ -39,7 +39,7 @@ export const accounts = sqliteTable('accounts', {
   updatedAt: text('updatedAt').default(sql`(datetime('now'))`),
 });
 
-export const verifications = sqliteTable('verifications', {
+export const verification = sqliteTable('verification', {
   id: text('id').primaryKey(),
   identifier: text('identifier').notNull(),
   value: text('value').notNull(),
@@ -48,5 +48,12 @@ export const verifications = sqliteTable('verifications', {
   updatedAt: text('updatedAt').default(sql`(datetime('now'))`),
 });
 
-export type InsertUser = typeof usersTable.$inferInsert;
-export type SelectUser = typeof usersTable.$inferSelect;
+export type InsertUser = typeof user.$inferInsert;
+export type SelectUser = typeof user.$inferSelect;
+
+export const schema = {
+  user,
+  session,
+  account,
+  verification,
+};
