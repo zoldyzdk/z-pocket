@@ -1,0 +1,9 @@
+node_modules
+.next
+.vscode
+dist
+build
+coverage
+*.log
+.env*
+!.env.example
