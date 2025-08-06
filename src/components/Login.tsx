@@ -1,9 +1,6 @@
 "use client"
 import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent
-} from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import {
   Form,
@@ -26,40 +23,45 @@ import { signin } from "@/actions/signIn"
 import { toast } from "sonner"
 
 const signinSchema = z.object({
-  email: z.email('Please enter a valid email address').min(1, 'Email is required'),
-  password: z.string().min(8, 'Password must be at least 8 characters long').max(70, 'Password must be between 8 and 70 characters long'),
-});
+  email: z
+    .email("Please enter a valid email address")
+    .min(1, "Email is required"),
+  password: z
+    .string()
+    .min(8, "Password must be at least 8 characters long")
+    .max(70, "Password must be between 8 and 70 characters long"),
+})
 
-export type SigninFormData = z.infer<typeof signinSchema>;
+export type SigninFormData = z.infer<typeof signinSchema>
 
-export function Login({
-  className,
-  ...props
-}: React.ComponentProps<"div">) {
-  const router = useRouter();
-  const [isPending, startTransition] = useTransition();
+export function Login({ className, ...props }: React.ComponentProps<"div">) {
+  const router = useRouter()
+  const [isPending, startTransition] = useTransition()
   const form = useForm<SigninFormData>({
     resolver: zodResolver(signinSchema),
     defaultValues: {
       email: "",
       password: "",
     },
-  });
+  })
 
   const onSubmit = async (formData: SigninFormData) => {
     startTransition(async () => {
       try {
-        const result = await signin(formData);
-        toast.success(result.message);
+        const result = await signin(formData)
+        toast.success(result.message)
         setTimeout(() => {
-          router.push("/dashboard");
-        }, 2000);
+          router.push("/dashboard")
+        }, 2000)
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred";
-        toast.error(errorMessage);
+        const errorMessage =
+          error instanceof Error
+            ? error.message
+            : "An unexpected error occurred"
+        toast.error(errorMessage)
       }
-    });
-  };
+    })
+  }
 
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
@@ -67,7 +69,10 @@ export function Login({
         <CardContent className="grid p-0 md:grid-cols-2">
           <div className="p-6 md:p-8">
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-6">
+              <form
+                onSubmit={form.handleSubmit(onSubmit)}
+                className="flex flex-col gap-6"
+              >
                 <div className="flex flex-col items-center text-center">
                   <h1 className="text-2xl font-bold">Welcome back</h1>
                   <p className="text-muted-foreground text-balance">

@@ -1,12 +1,12 @@
 "use server"
 
-import { SigninFormData } from "@/components/Login";
-import { auth } from "@/lib/auth";
-import { APIError } from "better-auth/api";
+import { SigninFormData } from "@/components/Login"
+import { auth } from "@/lib/auth"
+import { APIError } from "better-auth/api"
 
 type SignUpResponse = Promise<{
-  message: string;
-}>;
+  message: string
+}>
 
 /**
  * Handles user signup by calling the BetterAuth API.
@@ -19,15 +19,15 @@ export const signin = async (formData: SigninFormData): SignUpResponse => {
       body: {
         email: formData.email,
         password: formData.password,
-      }
+      },
     })
     return {
       message: `User ${formData.email} successfully signed in!`,
     }
   } catch (error) {
     if (error instanceof APIError) {
-      throw new Error(error.message);
+      throw new Error(error.message)
     }
-    throw error;
+    throw error
   }
 }
