@@ -15,28 +15,22 @@ import {
 import { Button } from "./ui/button"
 import { auth } from "@/lib/auth"
 import { headers } from "next/headers"
+import { SidebarTrigger } from "./ui/sidebar"
 
 export async function Navbar() {
   const session = await auth.api.getSession({
     headers: await headers(), // you need to pass the headers object.
   })
   return (
-    <nav className="border h-20 flex items-center justify-between p-8">
-      <div>
-        <ShimmeringText
-          text="Z-pocket"
-          className="text-2xl font-bold uppercase"
-          duration={1.5}
-          repeatDelay={1}
-        />
-      </div>
+    <nav className="border h-20 flex items-center justify-between p-2">
+      <SidebarTrigger />
       <div className="flex items-center gap-4">
         <Avatar>
           <AvatarImage src="https://avatars.githubusercontent.com/u/90076846?v=4" alt="@shadcn" />
           <AvatarFallback>CN</AvatarFallback>
         </Avatar>
         <DropdownMenu>
-          <DropdownMenuTrigger>
+          <DropdownMenuTrigger asChild>
             <Button variant="outline">{session?.user?.name}</Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent>

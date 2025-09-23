@@ -1,4 +1,6 @@
+import { AppSidebar } from "@/components/app-sidebar"
 import { Navbar } from "@/components/Navbar"
+import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 
 export default function LoggedAreaLayout({
   children,
@@ -7,8 +9,13 @@ export default function LoggedAreaLayout({
 }) {
   return (
     <main>
-      <Navbar />
-      {children}
+      <SidebarProvider>
+        <AppSidebar />
+        <SidebarInset className="flex gap-2">
+          <Navbar />
+          {children}
+        </SidebarInset>
+      </SidebarProvider>
     </main>
   )
 }

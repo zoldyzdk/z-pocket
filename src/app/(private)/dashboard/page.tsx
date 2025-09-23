@@ -1,4 +1,5 @@
-import { auth } from "@/lib/auth" // path to your Better Auth server instance
+import { SidebarProvider } from "@/components/ui/sidebar"
+import { auth } from "@/lib/auth"; // path to your Better Auth server instance
 import { headers } from "next/headers"
 
 export default async function page() {
@@ -13,5 +14,11 @@ export default async function page() {
       </div>
     )
   }
-  return <div>You are logged in as {session.user.name}</div>
+  return (
+    // <SidebarProvider>
+    <div>
+      You are logged in as {session.user.name}
+    </div>
+    // </SidebarProvider>
+  )
 }
