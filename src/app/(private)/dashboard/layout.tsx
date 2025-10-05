@@ -1,5 +1,6 @@
 import { AppSidebar } from "@/components/app-sidebar"
 import { Navbar } from "@/components/Navbar"
+import PrivateRoutes from "@/components/PrivateRoutes"
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 
 export default function LoggedAreaLayout({
@@ -9,13 +10,15 @@ export default function LoggedAreaLayout({
 }) {
   return (
     <main>
-      <SidebarProvider>
-        <AppSidebar />
-        <SidebarInset className="flex gap-2">
-          <Navbar />
-          {children}
-        </SidebarInset>
-      </SidebarProvider>
+      <PrivateRoutes >
+        <SidebarProvider>
+          <AppSidebar />
+          <SidebarInset className="flex gap-2">
+            <Navbar />
+            {children}
+          </SidebarInset>
+        </SidebarProvider>
+      </PrivateRoutes>
     </main>
   )
 }
