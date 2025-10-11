@@ -7,7 +7,17 @@ jiti("./env");
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  /* config options here */
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'react.dev',
+        port: '',
+        pathname: '/**',
+        search: '',
+      },
+    ],
+  },
 }
  
 export default nextConfig;

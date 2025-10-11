@@ -1,32 +1,36 @@
-import { AddLinkModal } from "@/components/add-link-modal"
-import { Button } from "@/components/ui/button"
-import {
-  Empty,
-  EmptyContent,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty"
-import { Link } from "lucide-react"
+import LinkCard from "@/components/LinkCard";
+import { SidebarProvider } from "@/components/ui/sidebar"
+import { auth } from "@/lib/auth"; // path to your Better Auth server instance
+import { headers } from "next/headers"
 
-export default async function Page() {
-
+export default async function page() {
+  const session = await auth.api.getSession({
+    headers: await headers(), // you need to pass the headers object.
+  })
+  if (!session) {
+    return (
+      <div>
+        <h1>You are not logged in</h1>
+        <p>Please log in to access this page.</p>
+      </div>
+    )
+  }
   return (
-    <Empty>
-      <EmptyHeader>
-        <EmptyMedia variant="icon">
-          <Link />
-        </EmptyMedia>
-      </EmptyHeader>
-      <EmptyTitle>Your link collection is empty</EmptyTitle>
-      <EmptyDescription>
-        Start building your personal link library by saving your first link.
-        Keep all your important bookmarks organized and easily accessible.
-      </EmptyDescription>
-      <EmptyContent>
-        <AddLinkModal />
-      </EmptyContent>
-    </Empty>
+    // <SidebarProvider>
+    <div className="p-4 flex gap-3.5 flex-wrap justify-center">
+      {
+        Array.from({ length: 10 }, (_, index) => (
+          <LinkCard
+            title="React Documentation"
+            description="The official React documentation with guides and API reference"
+            image="https://react.dev/favicon.ico"
+            tags={["React", "Documentation", "Frontend"]}
+            source="react.dev"
+            readTime="5 min read"
+          />
+        ))
+      }
+    </div>
+    // </SidebarProvider>
   )
 }
