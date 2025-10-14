@@ -81,9 +81,8 @@ export function AddLinkModal() {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger className={buttonVariants({ variant: "default" })}>
+      <DialogTrigger className={buttonVariants({ variant: "outline", size: "icon" })}>
         <PlusIcon />
-        Add Link
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>

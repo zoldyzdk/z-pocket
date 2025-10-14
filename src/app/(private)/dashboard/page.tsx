@@ -1,9 +1,20 @@
 import LinkCard from "@/components/LinkCard";
+import SearchLinks from "@/components/search-links";
 import { SidebarProvider } from "@/components/ui/sidebar"
 import { auth } from "@/lib/auth"; // path to your Better Auth server instance
 import { headers } from "next/headers"
+import { getUserLinks } from "@/lib/queries"
 
-export default async function page() {
+function formatReadTime(minutes: number | null): string | undefined {
+  if (!minutes) return undefined
+  return `${minutes} min read`
+}
+
+export default async function page({
+  searchParams
+}: {
+  searchParams: Promise<{ search?: string }>
+}) {
   const session = await auth.api.getSession({
     headers: await headers(), // you need to pass the headers object.
   })
@@ -15,21 +26,45 @@ export default async function page() {
       </div>
     )
   }
+
+  const resolvedSearchParams = await searchParams
+  const userLinks = await getUserLinks(session.user.id, {
+    limit: 20,
+    searchQuery: resolvedSearchParams.search
+  })
+
   return (
     // <SidebarProvider>
-    <div className="p-4 flex gap-3.5 flex-wrap justify-center">
-      {
-        Array.from({ length: 10 }, (_, index) => (
-          <LinkCard
-            title="React Documentation"
-            description="The official React documentation with guides and API reference"
-            image="https://react.dev/favicon.ico"
-            tags={["React", "Documentation", "Frontend"]}
-            source="react.dev"
-            readTime="5 min read"
-          />
-        ))
-      }
+    <div className="p-4">
+      <SearchLinks />
+
+      {userLinks.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-12 text-center">
+          <h2 className="text-xl font-semibold text-muted-foreground mb-2">
+            {resolvedSearchParams.search ? "No links found" : "No saved links yet"}
+          </h2>
+          <p className="text-muted-foreground">
+            {resolvedSearchParams.search
+              ? "Try adjusting your search terms"
+              : "Start by adding your first link!"
+            }
+          </p>
+        </div>
+      ) : (
+        <div className="flex gap-3.5 flex-wrap justify-center">
+          {userLinks.map((link) => (
+            <LinkCard
+              key={link.id}
+              title={link.title || "Untitled Link"}
+              description={link.description || undefined}
+              image={undefined} // No image field in current schema
+              tags={[]} // Categories not implemented yet
+              source={link.url}
+              readTime={formatReadTime(link.estimatedReadingTime)}
+            />
+          ))}
+        </div>
+      )}
     </div>
     // </SidebarProvider>
   )

@@ -6,18 +6,28 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { MoreVertical, Tag } from "lucide-react"
 import { cn } from "@/lib/utils"
+import Link from "next/link"
 
-interface ArticleCardProps {
-  image: string
+interface LinkCardProps {
+  image?: string
   title: string
-  description: string
+  description?: string
   tags?: string[]
   source?: string
   readTime?: string
   className?: string
 }
 
-export default function ArticleCard({
+function extractDomain(url: string): string {
+  try {
+    const domain = new URL(url).hostname
+    return domain.replace('www.', '')
+  } catch {
+    return 'Unknown'
+  }
+}
+
+export default function LinkCard({
   image,
   title,
   description,
@@ -25,23 +35,25 @@ export default function ArticleCard({
   source,
   readTime,
   className,
-}: ArticleCardProps) {
+}: LinkCardProps) {
   return (
     <Card className={cn("group overflow-hidden pt-0 pb-4 shadow-sm transition-shadow hover:shadow-md max-w-[350px]", className)}>
-      <div className="relative aspect-video w-full overflow-hidden bg-muted">
-        <Image
-          src={image || "/placeholder.svg"}
-          alt={title}
-          fill
-          className="object-cover transition-transform duration-300 group-hover:scale-105"
-        />
-      </div>
+      <Link href={source || ""} target="_blank">
+        <div className="relative aspect-video w-full overflow-hidden bg-muted">
+          <Image
+            src={image || "/no-image.jpg"}
+            alt={title}
+            fill
+            className="object-cover transition-transform duration-300 group-hover:scale-105"
+          />
+        </div>
+      </Link>
 
       <CardHeader className="">
-        <CardTitle className="text-balance text-xl font-bold leading-tight">{title}</CardTitle>
+        <CardTitle className="text-balance text-xl font-bold leading-tight min-h-[2.5em]">{title}</CardTitle>
         {(source || readTime) && (
           <CardDescription className="flex items-center gap-2">
-            {source && <span>{source}</span>}
+            {source && <span>{extractDomain(source)}</span>}
             {source && readTime && <span>·</span>}
             {readTime && <span>{readTime}</span>}
           </CardDescription>
@@ -49,7 +61,9 @@ export default function ArticleCard({
       </CardHeader>
 
       <CardContent className="">
-        <p className="text-pretty text-sm leading-relaxed text-muted-foreground">{description}</p>
+        {description && (
+          <p className="text-pretty text-sm leading-tight text-muted-foreground min-h-[4em]">{description}</p>
+        )}
       </CardContent>
 
       <CardFooter className="justify-between pt-0">
