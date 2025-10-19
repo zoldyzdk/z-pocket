@@ -60,6 +60,7 @@ export const links = sqliteTable("links", {
   url: text("url").notNull(),
   title: text("title"),
   description: text("description"),
+  imageUrl: text("image_url"),
   type: text("type"), // artigo, video, blog, etc.
   estimatedReadingTime: integer("estimated_reading_time"), // tempo em minutos
   wordCount: integer("word_count"), // contagem de palavras
