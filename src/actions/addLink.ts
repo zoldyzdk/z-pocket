@@ -17,6 +17,7 @@ type LinkFormData = {
   url: string
   title?: string
   description?: string
+  imageUrl?: string
   tags?: string // Note: tags are not currently stored in the database schema
 }
 
@@ -29,7 +30,7 @@ export const addLink = async (formData: LinkFormData): AddLinkResponse => {
   try {
     // Get the current session to ensure user is authenticated
     const session = await auth.api.getSession({
-      headers: await headers()
+      headers: await headers(),
     })
 
     if (!session?.user?.id) {
@@ -51,6 +52,7 @@ export const addLink = async (formData: LinkFormData): AddLinkResponse => {
       url: formData.url,
       title: formData.title || null,
       description: formData.description || null,
+      imageUrl: formData.imageUrl || null,
       type: null, // Can be enhanced later to auto-detect content type
       estimatedReadingTime: null,
       wordCount: null,
@@ -67,11 +69,11 @@ export const addLink = async (formData: LinkFormData): AddLinkResponse => {
     }
   } catch (error) {
     console.error("Error adding link:", error)
-    
+
     if (error instanceof Error) {
       throw new Error(error.message)
     }
-    
+
     throw new Error("Failed to add link. Please try again.")
   }
 }

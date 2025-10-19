@@ -1,7 +1,7 @@
 import LinkCard from "@/components/LinkCard";
 import SearchLinks from "@/components/search-links";
 import { SidebarProvider } from "@/components/ui/sidebar"
-import { auth } from "@/lib/auth"; // path to your Better Auth server instance
+import { auth } from "@/lib/auth";
 import { headers } from "next/headers"
 import { getUserLinks } from "@/lib/queries"
 
@@ -16,7 +16,7 @@ export default async function page({
   searchParams: Promise<{ search?: string }>
 }) {
   const session = await auth.api.getSession({
-    headers: await headers(), // you need to pass the headers object.
+    headers: await headers(),
   })
   if (!session) {
     return (
@@ -57,7 +57,7 @@ export default async function page({
               key={link.id}
               title={link.title || "Untitled Link"}
               description={link.description || undefined}
-              image={undefined} // No image field in current schema
+              image={link.imageUrl || undefined}
               tags={[]} // Categories not implemented yet
               source={link.url}
               readTime={formatReadTime(link.estimatedReadingTime)}

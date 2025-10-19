@@ -40,10 +40,9 @@ export default function LinkCard({
     <Card className={cn("group overflow-hidden pt-0 pb-4 shadow-sm transition-shadow hover:shadow-md max-w-[350px]", className)}>
       <Link href={source || ""} target="_blank">
         <div className="relative aspect-video w-full overflow-hidden bg-muted">
-          <Image
+          <img
             src={image || "/no-image.jpg"}
             alt={title}
-            fill
             className="object-cover transition-transform duration-300 group-hover:scale-105"
           />
         </div>

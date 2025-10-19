@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import Image from "next/image"
 import { Button, buttonVariants } from "@/components/ui/button"
 import {
   Dialog,
@@ -22,12 +23,13 @@ import {
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { Bookmark, LinkIcon, PlusIcon, Tag } from "lucide-react"
+import { Bookmark, LinkIcon, PlusIcon, Tag, Loader2, Search } from "lucide-react"
 import { toast } from "sonner"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { addLink } from "@/actions/addLink"
+import { fetchMetadata } from "@/actions/fetchMetadata"
 
 const linkSchema = z.object({
   url: z
@@ -41,6 +43,10 @@ const linkSchema = z.object({
     .string()
     .max(500, "Description must be less than 500 characters")
     .optional(),
+  imageUrl: z
+    .url("Please enter a valid image URL")
+    .optional()
+    .or(z.literal("")),
   tags: z
     .string()
     .max(100, "Tags must be less than 100 characters")
@@ -51,6 +57,12 @@ type LinkFormData = z.infer<typeof linkSchema>
 
 export function AddLinkModal() {
   const [open, setOpen] = useState(false)
+  const [isFetchingMetadata, setIsFetchingMetadata] = useState(false)
+  const [metadataPreview, setMetadataPreview] = useState<{
+    title?: string
+    description?: string
+    imageUrl?: string
+  } | null>(null)
 
   const form = useForm<LinkFormData>({
     resolver: zodResolver(linkSchema),
@@ -58,9 +70,50 @@ export function AddLinkModal() {
       url: "",
       title: "",
       description: "",
+      imageUrl: "",
       tags: "",
     },
   })
+
+  const fetchMetadataFromUrl = async (url: string) => {
+    if (!url) return
+
+    setIsFetchingMetadata(true)
+    setMetadataPreview(null)
+
+    try {
+      const metadata = await fetchMetadata(url)
+
+      if (metadata.error) {
+        toast.error(`Failed to fetch metadata: ${metadata.error}`)
+        return
+      }
+
+      if (metadata.title || metadata.description || metadata.imageUrl) {
+        setMetadataPreview(metadata)
+
+        // Pre-fill form fields with fetched data
+        if (metadata.title && !form.getValues("title")) {
+          form.setValue("title", metadata.title)
+        }
+        if (metadata.description && !form.getValues("description")) {
+          form.setValue("description", metadata.description)
+        }
+        if (metadata.imageUrl && !form.getValues("imageUrl")) {
+          form.setValue("imageUrl", metadata.imageUrl)
+        }
+
+        toast.success("Metadata fetched successfully!")
+      } else {
+        toast.info("No metadata found for this URL")
+      }
+    } catch (error) {
+      console.error("Error fetching metadata:", error)
+      toast.error("Failed to fetch metadata. Please try again.")
+    } finally {
+      setIsFetchingMetadata(false)
+    }
+  }
 
   const onSubmit = async (data: LinkFormData) => {
     try {
@@ -69,6 +122,7 @@ export function AddLinkModal() {
       if (result.success) {
         toast.success(result.message)
         form.reset()
+        setMetadataPreview(null)
         setOpen(false)
       } else {
         toast.error("Failed to save link. Please try again.")
@@ -106,15 +160,64 @@ export function AddLinkModal() {
                     URL *
                   </FormLabel>
                   <FormControl>
-                    <Input
-                      placeholder="https://example.com/article"
-                      {...field}
-                    />
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="https://example.com/article"
+                        {...field}
+                        className="flex-1"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={() => fetchMetadataFromUrl(field.value)}
+                        disabled={isFetchingMetadata || !field.value}
+                      >
+                        {isFetchingMetadata ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Search className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
+
+            {/* Metadata Preview */}
+            {metadataPreview && (
+              <div className="rounded-lg border bg-muted/50 p-4">
+                <h4 className="text-sm font-medium mb-3">Preview</h4>
+                <div className="flex gap-3">
+                  {metadataPreview.imageUrl && (
+                    <div className="relative w-16 h-16 rounded overflow-hidden bg-muted flex-shrink-0">
+                      <img
+                        src={metadataPreview.imageUrl}
+                        alt="Preview"
+                        className="object-cover"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none'
+                        }}
+                      />
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    {metadataPreview.title && (
+                      <p className="text-sm font-medium line-clamp-2 mb-1">
+                        {metadataPreview.title}
+                      </p>
+                    )}
+                    {metadataPreview.description && (
+                      <p className="text-xs text-muted-foreground line-clamp-2">
+                        {metadataPreview.description}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
 
             <FormField
               control={form.control}
@@ -144,6 +247,23 @@ export function AddLinkModal() {
                       placeholder="Brief description (optional)"
                       className="resize-none"
                       rows={3}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="imageUrl"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Image URL</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="https://example.com/image.jpg (optional)"
                       {...field}
                     />
                   </FormControl>
