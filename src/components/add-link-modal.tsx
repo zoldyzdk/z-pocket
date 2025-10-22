@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import Image from "next/image"
+import { addLink } from "@/actions/addLink"
+import { fetchMetadata } from "@/actions/fetchMetadata"
 import { Button, buttonVariants } from "@/components/ui/button"
 import {
   Dialog,
@@ -23,13 +23,12 @@ import {
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { Bookmark, LinkIcon, PlusIcon, Tag, Loader2, Search } from "lucide-react"
-import { toast } from "sonner"
-import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
+import { Bookmark, LinkIcon, Loader2, PlusIcon, Search, Tag } from "lucide-react"
+import { useState } from "react"
+import { useForm } from "react-hook-form"
+import { toast } from "sonner"
 import { z } from "zod"
-import { addLink } from "@/actions/addLink"
-import { fetchMetadata } from "@/actions/fetchMetadata"
 
 const linkSchema = z.object({
   url: z
@@ -123,7 +122,7 @@ export function AddLinkModal() {
         toast.success(result.message)
         form.reset()
         setMetadataPreview(null)
-        setOpen(false)
+        // setOpen(false)
       } else {
         toast.error("Failed to save link. Please try again.")
       }
@@ -133,8 +132,15 @@ export function AddLinkModal() {
     }
   }
 
+  const clearFormOnCloseModal = (open: boolean) => {
+    if (!open) {
+      form.reset()
+      setMetadataPreview(null)
+    }
+  }
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog onOpenChange={clearFormOnCloseModal}>
       <DialogTrigger className={buttonVariants({ variant: "outline", size: "icon" })}>
         <PlusIcon />
       </DialogTrigger>
@@ -190,9 +196,9 @@ export function AddLinkModal() {
             {metadataPreview && (
               <div className="rounded-lg border bg-muted/50 p-4">
                 <h4 className="text-sm font-medium mb-3">Preview</h4>
-                <div className="flex gap-3">
+                <div className="flex gap-3 items-center">
                   {metadataPreview.imageUrl && (
-                    <div className="relative w-16 h-16 rounded overflow-hidden bg-muted flex-shrink-0">
+                    <div className="relative w-16 rounded overflow-hidden bg-muted flex-shrink-0">
                       <img
                         src={metadataPreview.imageUrl}
                         alt="Preview"
