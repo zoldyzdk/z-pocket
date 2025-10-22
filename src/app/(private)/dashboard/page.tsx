@@ -58,7 +58,7 @@ export default async function page({
               title={link.title || "Untitled Link"}
               description={link.description || undefined}
               image={link.imageUrl || undefined}
-              tags={[]} // Categories not implemented yet
+              tags={link.categories}
               source={link.url}
               readTime={formatReadTime(link.estimatedReadingTime)}
             />

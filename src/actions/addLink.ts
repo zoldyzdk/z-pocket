@@ -1,11 +1,12 @@
 "use server"
 
 import { db } from "@/db"
-import { links } from "@/db/schema"
+import { links, categories, linkCategories } from "@/db/schema"
 import { auth } from "@/lib/auth"
 import { nanoid } from "nanoid"
 import { revalidatePath } from "next/cache"
 import { headers } from "next/headers"
+import { eq, and } from "drizzle-orm"
 
 type AddLinkResponse = Promise<{
   success: boolean
@@ -18,7 +19,7 @@ type LinkFormData = {
   title?: string
   description?: string
   imageUrl?: string
-  tags?: string // Note: tags are not currently stored in the database schema
+  categories?: string[]
 }
 
 /**
@@ -58,6 +59,45 @@ export const addLink = async (formData: LinkFormData): AddLinkResponse => {
       wordCount: null,
       isArchived: false,
     })
+
+    // Handle categories if provided
+    if (formData.categories && formData.categories.length > 0) {
+      for (const categoryName of formData.categories) {
+        const normalizedName = categoryName.trim()
+        if (!normalizedName) continue
+
+        // Check if category already exists for this user (case-insensitive)
+        const existingCategory = await db
+          .select()
+          .from(categories)
+          .where(and(eq(categories.userId, session.user.id), eq(categories.name, normalizedName)))
+          .limit(1)
+
+        let categoryId: string
+
+        if (existingCategory.length > 0) {
+          // Use existing category
+          categoryId = existingCategory[0].id
+        } else {
+          // Create new category
+          categoryId = nanoid()
+          await db.insert(categories).values({
+            id: categoryId,
+            userId: session.user.id,
+            name: normalizedName,
+            color: null,
+            icon: null,
+          })
+        }
+
+        // Link the category to the link
+        await db.insert(linkCategories).values({
+          id: nanoid(),
+          linkId: linkId,
+          categoryId: categoryId,
+        })
+      }
+    }
 
     // Revalidate the dashboard page to show the new link
     revalidatePath("/dashboard")

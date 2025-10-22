@@ -37,7 +37,7 @@ export default function LinkCard({
   className,
 }: LinkCardProps) {
   return (
-    <Card className={cn("group overflow-hidden pt-0 pb-4 shadow-sm transition-shadow hover:shadow-md max-w-[350px]", className)}>
+    <Card className={cn("group overflow-hidden pt-0 pb-4 shadow-sm transition-shadow hover:shadow-md max-w-[350px] flex flex-col", className)}>
       <Link href={source || ""} target="_blank">
         <div className="relative aspect-video w-full overflow-hidden bg-muted">
           <img
@@ -49,23 +49,21 @@ export default function LinkCard({
       </Link>
 
       <CardHeader className="">
-        <CardTitle className="text-balance text-xl font-bold leading-tight min-h-[2.5em]">{title}</CardTitle>
-        {(source || readTime) && (
-          <CardDescription className="flex items-center gap-2">
-            {source && <span>{extractDomain(source)}</span>}
-            {source && readTime && <span>·</span>}
-            {readTime && <span>{readTime}</span>}
-          </CardDescription>
-        )}
+        <CardTitle className="text-balance text-xl font-bold leading-tight line-clamp-2 min-h-[2.5em]">{title}</CardTitle>
+        <CardDescription className="flex items-center gap-2 min-h-[1.5em]">
+          {source && <span>{extractDomain(source)}</span>}
+          {source && readTime && <span>·</span>}
+          {readTime && <span>{readTime}</span>}
+        </CardDescription>
       </CardHeader>
 
       <CardContent className="">
-        {description && (
-          <p className="text-pretty text-sm leading-tight text-muted-foreground min-h-[4em]">{description}</p>
-        )}
+        <p className="text-pretty text-sm leading-tight text-muted-foreground line-clamp-3">
+          {description || '\u00A0'}
+        </p>
       </CardContent>
 
-      <CardFooter className="justify-between pt-0">
+      <CardFooter className="justify-between pt-0 mt-auto">
         <div className="flex flex-wrap gap-2">
           {tags.map((tag, index) => (
             <Badge
@@ -78,17 +76,14 @@ export default function LinkCard({
             </Badge>
           ))}
         </div>
-        {/* TODO: transform this into a client component */}
-        {/* {onMenuClick && (
-        )} */}
-        <Button
+        {/* <Button
           variant="ghost"
           size="icon"
           className="shrink-0 text-muted-foreground hover:text-foreground"
         >
           <MoreVertical className="h-5 w-5" />
           <span className="sr-only">More options</span>
-        </Button>
+        </Button> */}
       </CardFooter>
     </Card>
   )

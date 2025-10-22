@@ -2,6 +2,7 @@
 
 import { addLink } from "@/actions/addLink"
 import { fetchMetadata } from "@/actions/fetchMetadata"
+import { getCategories } from "@/actions/getCategories"
 import { Button, buttonVariants } from "@/components/ui/button"
 import {
   Dialog,
@@ -23,9 +24,10 @@ import {
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
+import { TagInput } from "@/components/ui/tag-input"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Bookmark, LinkIcon, Loader2, PlusIcon, Search, Tag } from "lucide-react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useForm } from "react-hook-form"
 import { toast } from "sonner"
 import { z } from "zod"
@@ -46,9 +48,8 @@ const linkSchema = z.object({
     .url("Please enter a valid image URL")
     .optional()
     .or(z.literal("")),
-  tags: z
-    .string()
-    .max(100, "Tags must be less than 100 characters")
+  categories: z
+    .array(z.string())
     .optional(),
 })
 
@@ -62,6 +63,7 @@ export function AddLinkModal() {
     description?: string
     imageUrl?: string
   } | null>(null)
+  const [categorySuggestions, setCategorySuggestions] = useState<string[]>([])
 
   const form = useForm<LinkFormData>({
     resolver: zodResolver(linkSchema),
@@ -70,9 +72,23 @@ export function AddLinkModal() {
       title: "",
       description: "",
       imageUrl: "",
-      tags: "",
+      categories: [],
     },
   })
+
+  // Fetch categories on component mount
+  useEffect(() => {
+    const fetchCategorySuggestions = async () => {
+      try {
+        const categories = await getCategories()
+        setCategorySuggestions(categories)
+      } catch (error) {
+        console.error("Error fetching categories:", error)
+      }
+    }
+
+    fetchCategorySuggestions()
+  }, [])
 
   const fetchMetadataFromUrl = async (url: string) => {
     if (!url) return
@@ -280,17 +296,19 @@ export function AddLinkModal() {
 
             <FormField
               control={form.control}
-              name="tags"
+              name="categories"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel className="flex items-center gap-2">
                     <Tag className="h-4 w-4" />
-                    Tags
+                    Categories
                   </FormLabel>
                   <FormControl>
-                    <Input
-                      placeholder="tag1, tag2, tag3 (optional)"
-                      {...field}
+                    <TagInput
+                      value={field.value || []}
+                      onChange={field.onChange}
+                      suggestions={categorySuggestions}
+                      placeholder="Add categories..."
                     />
                   </FormControl>
                   <FormMessage />
