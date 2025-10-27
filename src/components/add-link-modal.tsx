@@ -1,6 +1,7 @@
 "use client"
 
 import { addLink } from "@/actions/addLink"
+import { updateLink } from "@/actions/updateLink"
 import { fetchMetadata } from "@/actions/fetchMetadata"
 import { getCategories } from "@/actions/getCategories"
 import { Button, buttonVariants } from "@/components/ui/button"
@@ -55,7 +56,19 @@ const linkSchema = z.object({
 
 type LinkFormData = z.infer<typeof linkSchema>
 
-export function AddLinkModal() {
+interface AddLinkModalProps {
+  linkId?: string
+  initialData?: {
+    url: string
+    title?: string | null
+    description?: string | null
+    imageUrl?: string | null
+    categories?: string[]
+  }
+  trigger?: React.ReactNode
+}
+
+export function AddLinkModal({ linkId, initialData, trigger }: AddLinkModalProps) {
   const [open, setOpen] = useState(false)
   const [isFetchingMetadata, setIsFetchingMetadata] = useState(false)
   const [metadataPreview, setMetadataPreview] = useState<{
@@ -64,10 +77,17 @@ export function AddLinkModal() {
     imageUrl?: string
   } | null>(null)
   const [categorySuggestions, setCategorySuggestions] = useState<string[]>([])
+  const isEditMode = !!linkId
 
   const form = useForm<LinkFormData>({
     resolver: zodResolver(linkSchema),
-    defaultValues: {
+    defaultValues: initialData ? {
+      url: initialData.url || "",
+      title: initialData.title || "",
+      description: initialData.description || "",
+      imageUrl: initialData.imageUrl || "",
+      categories: initialData.categories || [],
+    } : {
       url: "",
       title: "",
       description: "",
@@ -76,19 +96,21 @@ export function AddLinkModal() {
     },
   })
 
-  // Fetch categories on component mount
+  // Fetch categories only when modal is opened
   useEffect(() => {
-    const fetchCategorySuggestions = async () => {
-      try {
-        const categories = await getCategories()
-        setCategorySuggestions(categories)
-      } catch (error) {
-        console.error("Error fetching categories:", error)
+    if (open) {
+      const fetchCategorySuggestions = async () => {
+        try {
+          const categories = await getCategories()
+          setCategorySuggestions(categories)
+        } catch (error) {
+          console.error("Error fetching categories:", error)
+        }
       }
-    }
 
-    fetchCategorySuggestions()
-  }, [])
+      fetchCategorySuggestions()
+    }
+  }, [open])
 
   const fetchMetadataFromUrl = async (url: string) => {
     if (!url) return
@@ -132,42 +154,78 @@ export function AddLinkModal() {
 
   const onSubmit = async (data: LinkFormData) => {
     try {
-      const result = await addLink(data)
+      let result
+
+      if (isEditMode && linkId) {
+        result = await updateLink(linkId, data)
+      } else {
+        result = await addLink(data)
+      }
 
       if (result.success) {
         toast.success(result.message)
-        form.reset()
+        if (!isEditMode) {
+          form.reset()
+        }
         setMetadataPreview(null)
-        // setOpen(false)
+        setOpen(false)
       } else {
-        toast.error("Failed to save link. Please try again.")
+        toast.error(`Failed to ${isEditMode ? 'update' : 'save'} link. Please try again.`)
       }
     } catch (error) {
-      console.error("Error saving link:", error)
-      toast.error(error instanceof Error ? error.message : "Failed to save link. Please try again.")
+      console.error(`Error ${isEditMode ? 'updating' : 'saving'} link:`, error)
+      toast.error(error instanceof Error ? error.message : `Failed to ${isEditMode ? 'update' : 'save'} link. Please try again.`)
     }
   }
 
-  const clearFormOnCloseModal = (open: boolean) => {
-    if (!open) {
-      form.reset()
+  const handleOpenChange = (newOpen: boolean) => {
+    setOpen(newOpen)
+
+    // Clean up when closing
+    if (!newOpen) {
+      // Reset metadata preview
       setMetadataPreview(null)
+
+      // Reset form to initial values
+      if (isEditMode && initialData) {
+        form.reset({
+          url: initialData.url || "",
+          title: initialData.title || "",
+          description: initialData.description || "",
+          imageUrl: initialData.imageUrl || "",
+          categories: initialData.categories || [],
+        })
+      } else {
+        form.reset({
+          url: "",
+          title: "",
+          description: "",
+          imageUrl: "",
+          categories: [],
+        })
+      }
     }
   }
 
   return (
-    <Dialog onOpenChange={clearFormOnCloseModal}>
-      <DialogTrigger className={buttonVariants({ variant: "outline", size: "icon" })}>
-        <PlusIcon />
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogTrigger asChild>
+        {trigger || (
+          <button className={buttonVariants({ variant: "outline", size: "icon" })}>
+            <PlusIcon />
+          </button>
+        )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Bookmark />
-            Save for later
+            {isEditMode ? 'Edit link' : 'Save for later'}
           </DialogTitle>
           <DialogDescription>
-            Add a link to your reading list. We'll save it for you to read anytime.
+            {isEditMode
+              ? 'Update the link details below.'
+              : "Add a link to your reading list. We'll save it for you to read anytime."}
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -323,7 +381,9 @@ export function AddLinkModal() {
                 </Button>
               </DialogClose>
               <Button type="submit" disabled={form.formState.isSubmitting}>
-                {form.formState.isSubmitting ? "Saving..." : "Save"}
+                {form.formState.isSubmitting
+                  ? (isEditMode ? "Updating..." : "Saving...")
+                  : (isEditMode ? "Update" : "Save")}
               </Button>
             </DialogFooter>
           </form>

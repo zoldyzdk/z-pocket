@@ -55,6 +55,7 @@ export default async function page({
           {userLinks.map((link) => (
             <LinkCard
               key={link.id}
+              linkId={link.id}
               title={link.title || "Untitled Link"}
               description={link.description || undefined}
               image={link.imageUrl || undefined}

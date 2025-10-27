@@ -4,11 +4,18 @@ import Image from "next/image"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { MoreVertical, Tag } from "lucide-react"
+import { Edit, MoreVertical, PencilLine, Tag } from "lucide-react"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
+import { AddLinkModal } from "@/components/add-link-modal"
 
 interface LinkCardProps {
+  linkId: string
   image?: string
   title: string
   description?: string
@@ -28,6 +35,7 @@ function extractDomain(url: string): string {
 }
 
 export default function LinkCard({
+  linkId,
   image,
   title,
   description,
@@ -76,14 +84,32 @@ export default function LinkCard({
             </Badge>
           ))}
         </div>
-        {/* <Button
-          variant="ghost"
-          size="icon"
-          className="shrink-0 text-muted-foreground hover:text-foreground"
-        >
-          <MoreVertical className="h-5 w-5" />
-          <span className="sr-only">More options</span>
-        </Button> */}
+        <Tooltip>
+          <TooltipContent>
+            Edit link
+          </TooltipContent>
+          <TooltipTrigger asChild>
+            <AddLinkModal
+              linkId={linkId}
+              initialData={{
+                url: source || "",
+                title: title,
+                description: description,
+                imageUrl: image,
+                categories: tags,
+              }}
+              trigger={
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="shrink-0 text-muted-foreground hover:text-foreground"
+                >
+                  <PencilLine className="size-5" />
+                </Button>
+              }
+            />
+          </TooltipTrigger>
+        </Tooltip>
       </CardFooter>
     </Card>
   )
