@@ -69,6 +69,48 @@ export const fetchMetadata = async (url: string): Promise<MetadataResponse> => {
 }
 
 /**
+ * Decode HTML entities to their text equivalents
+ */
+function decodeHtmlEntities(text: string): string {
+  const entities: { [key: string]: string } = {
+    "&amp;": "&",
+    "&lt;": "<",
+    "&gt;": ">",
+    "&quot;": '"',
+    "&#34;": '"',
+    "&apos;": "'",
+    "&#39;": "'",
+    "&#x27;": "'",
+    "&nbsp;": " ",
+    "&ndash;": "\u2013",
+    "&mdash;": "\u2014",
+    "&ldquo;": "\u201C",
+    "&rdquo;": "\u201D",
+    "&lsquo;": "\u2018",
+    "&rsquo;": "\u2019",
+    "&hellip;": "\u2026",
+  }
+
+  // Replace named entities
+  let decoded = text
+  for (const [entity, char] of Object.entries(entities)) {
+    decoded = decoded.replace(new RegExp(entity, "g"), char)
+  }
+
+  // Replace numeric entities (decimal)
+  decoded = decoded.replace(/&#(\d+);/g, (_, num) => {
+    return String.fromCharCode(parseInt(num, 10))
+  })
+
+  // Replace numeric entities (hexadecimal)
+  decoded = decoded.replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => {
+    return String.fromCharCode(parseInt(hex, 16))
+  })
+
+  return decoded
+}
+
+/**
  * Parse metadata from HTML content
  */
 function parseMetadata(html: string, baseUrl: string): MetadataResponse {
@@ -81,13 +123,13 @@ function parseMetadata(html: string, baseUrl: string): MetadataResponse {
       "i"
     )
     const match = html.match(regex)
-    return match ? match[1] : null
+    return match ? decodeHtmlEntities(match[1]) : null
   }
 
   // Helper function to extract title tag
   const getTitle = (): string | null => {
     const titleMatch = html.match(/<title[^>]*>([^<]*)<\/title>/i)
-    return titleMatch ? titleMatch[1].trim() : null
+    return titleMatch ? decodeHtmlEntities(titleMatch[1].trim()) : null
   }
 
   // Extract Open Graph tags first (preferred)
