@@ -129,16 +129,9 @@ export function AddLinkModal({ linkId, initialData, trigger }: AddLinkModalProps
       if (metadata.title || metadata.description || metadata.imageUrl) {
         setMetadataPreview(metadata)
 
-        // Pre-fill form fields with fetched data
-        if (metadata.title && !form.getValues("title")) {
-          form.setValue("title", metadata.title)
-        }
-        if (metadata.description && !form.getValues("description")) {
-          form.setValue("description", metadata.description)
-        }
-        if (metadata.imageUrl && !form.getValues("imageUrl")) {
-          form.setValue("imageUrl", metadata.imageUrl)
-        }
+        form.setValue("title", metadata.title)
+        form.setValue("description", metadata.description)
+        form.setValue("imageUrl", metadata.imageUrl)
 
         toast.success("Metadata fetched successfully!")
       } else {
@@ -245,6 +238,12 @@ export function AddLinkModal({ linkId, initialData, trigger }: AddLinkModalProps
                         placeholder="https://example.com/article"
                         {...field}
                         className="flex-1"
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault()
+                            fetchMetadataFromUrl(field.value)
+                          }
+                        }}
                       />
                       <Button
                         type="button"
