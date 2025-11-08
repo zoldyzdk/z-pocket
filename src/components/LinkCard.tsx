@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import Image from "next/image"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -44,14 +45,22 @@ export default function LinkCard({
   readTime,
   className,
 }: LinkCardProps) {
+  const [imageError, setImageError] = useState(false)
+  const fallbackImage = "/no-image.jpg"
+  const imageSrc = imageError || !image ? fallbackImage : image
+
   return (
     <Card className={cn("group overflow-hidden pt-0 pb-4 shadow-sm transition-shadow hover:shadow-md max-w-[350px] flex flex-col", className)}>
       <Link href={source || ""} target="_blank">
         <div className="relative aspect-video w-full overflow-hidden bg-muted">
-          <img
-            src={image || "/no-image.jpg"}
+          <Image
+            unoptimized
+            width={350}
+            height={200}
+            src={imageSrc}
             alt={title}
             className="object-cover transition-transform duration-300 group-hover:scale-105"
+            onError={() => setImageError(true)}
           />
         </div>
       </Link>
