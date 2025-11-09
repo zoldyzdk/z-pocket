@@ -5,7 +5,7 @@ import Image from "next/image"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Edit, MoreVertical, PencilLine, Tag } from "lucide-react"
+import { Edit, MoreVertical, PencilLine, Tag, Trash2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
 import {
@@ -14,6 +14,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { AddLinkModal } from "@/components/add-link-modal"
+import { DeleteModal } from "./DeleteModal"
 
 interface LinkCardProps {
   linkId: string
@@ -93,11 +94,12 @@ export default function LinkCard({
             </Badge>
           ))}
         </div>
-        <Tooltip>
-          <TooltipContent>
-            Edit link
-          </TooltipContent>
-          <TooltipTrigger asChild>
+        <div className="space-x-6">
+          <DeleteModal />
+          <Tooltip>
+            <TooltipContent>
+              Edit link
+            </TooltipContent>
             <AddLinkModal
               linkId={linkId}
               initialData={{
@@ -108,17 +110,20 @@ export default function LinkCard({
                 categories: tags,
               }}
               trigger={
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="shrink-0 text-muted-foreground hover:text-foreground"
-                >
-                  <PencilLine className="size-5" />
-                </Button>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="shrink-0 text-muted-foreground hover:text-foreground"
+                  >
+                    <PencilLine className="size-5" />
+                  </Button>
+                </TooltipTrigger>
               }
             />
-          </TooltipTrigger>
-        </Tooltip>
+          </Tooltip>
+        </div>
+
       </CardFooter>
     </Card>
   )
