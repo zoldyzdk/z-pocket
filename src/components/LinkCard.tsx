@@ -95,7 +95,7 @@ export default function LinkCard({
           ))}
         </div>
         <div className="space-x-6">
-          <DeleteModal />
+          <DeleteModal linkId={linkId} />
           <Tooltip>
             <TooltipContent>
               Edit link

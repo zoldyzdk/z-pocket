@@ -2,22 +2,45 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { Button } from "@/components/ui/button"
-import { Trash2 } from "lucide-react"
+import { Loader2, Trash2 } from "lucide-react"
+import { useState, useTransition } from "react"
+import { toast } from "sonner"
+import { deleteLinks } from "@/actions/deleteLinks"
 
-export function DeleteModal() {
+
+interface DeleteModalProps {
+  linkId: string
+}
+
+export function DeleteModal({ linkId }: DeleteModalProps) {
+  const [isLoading, startTransition] = useTransition();
+  const [isOpen, setIsOpen] = useState(false);
+  const handleDelete = async () => {
+    startTransition(async () => {
+      const result = await deleteLinks(linkId);
+      if (result.error) {
+        toast.error(result.message);
+        return;
+      }
+      toast.success(result.message);
+      setIsOpen(false);
+    });
+  };
+
   return (
-    <Dialog>
-      <DialogTrigger asChild>
-        <Tooltip>
-          <TooltipContent>
-            Delete link
-          </TooltipContent>
+    <Tooltip>
+      <TooltipContent>
+        Delete link
+      </TooltipContent>
+      <Dialog open={isOpen} onOpenChange={setIsOpen}>
+        <DialogTrigger asChild>
           <TooltipTrigger asChild>
             <Button
               variant="secondary"
@@ -27,17 +50,22 @@ export function DeleteModal() {
               <Trash2 className="size-5" />
             </Button>
           </TooltipTrigger>
-        </Tooltip>
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Are you absolutely sure?</DialogTitle>
-          <DialogDescription>
-            This action cannot be undone. This will permanently delete your account
-            and remove your data from our servers.
-          </DialogDescription>
-        </DialogHeader>
-      </DialogContent>
-    </Dialog>
+        </DialogTrigger>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Are you absolutely sure?</DialogTitle>
+            <DialogDescription>
+              This action cannot be undone. This will permanently delete this link
+              and remove it from your reading list.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="destructive" onClick={handleDelete} disabled={isLoading}>
+              {isLoading ? <Loader2 className="size-4 animate-spin" /> : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </Tooltip>
   )
 }
