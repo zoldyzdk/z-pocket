@@ -149,7 +149,7 @@ export function Login({ className, ...props }: React.ComponentProps<"div">) {
           </div>
           <div className="bg-muted relative hidden md:block">
             <Image
-              src="/man-reading.jpg"
+              src="/advice.jpg"
               alt="Image"
               className="absolute inset-0 h-full w-full object-cover dark:brightness-[0.2] dark:grayscale"
               width={300}
