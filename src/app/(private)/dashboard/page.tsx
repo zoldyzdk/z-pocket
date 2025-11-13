@@ -13,7 +13,7 @@ function formatReadTime(minutes: number | null): string | undefined {
 export default async function page({
   searchParams
 }: {
-  searchParams: Promise<{ search?: string }>
+  searchParams: Promise<{ search?: string; category?: string }>
 }) {
   const session = await auth.api.getSession({
     headers: await headers(),
@@ -30,7 +30,8 @@ export default async function page({
   const resolvedSearchParams = await searchParams
   const userLinks = await getUserLinks(session.user.id, {
     limit: 20,
-    searchQuery: resolvedSearchParams.search
+    searchQuery: resolvedSearchParams.search,
+    categoryName: resolvedSearchParams.category
   })
 
   return (
@@ -41,13 +42,14 @@ export default async function page({
       {userLinks.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 text-center">
           <h2 className="text-xl font-semibold text-muted-foreground mb-2">
-            {resolvedSearchParams.search ? "No links found" : "No saved links yet"}
+            {resolvedSearchParams.search || resolvedSearchParams.category
+              ? "No links found"
+              : "No saved links yet"}
           </h2>
           <p className="text-muted-foreground">
-            {resolvedSearchParams.search
-              ? "Try adjusting your search terms"
-              : "Start by adding your first link!"
-            }
+            {resolvedSearchParams.search || resolvedSearchParams.category
+              ? "Try adjusting your search terms or category filter"
+              : "Start by adding your first link!"}
           </p>
         </div>
       ) : (

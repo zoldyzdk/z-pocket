@@ -1,4 +1,6 @@
 import { Calendar, Home, Inbox, Search, Settings } from "lucide-react"
+import { auth } from "@/lib/auth"
+import { headers } from "next/headers"
 
 import {
   Sidebar,
@@ -12,6 +14,9 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import { ShimmeringText } from "./ui/shimmering-text"
+import { getCategoriesWithLinks } from "@/lib/queries"
+import { CategoryMenuItem } from "./category-menu-item"
+import { AllCategoriesMenuItem } from "./all-categories-menu-item"
 
 // Menu items.
 const items = [
@@ -42,7 +47,15 @@ const items = [
   },
 ]
 
-export function AppSidebar() {
+export async function AppSidebar() {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  })
+
+  const categories = session?.user?.id
+    ? await getCategoriesWithLinks(session.user.id)
+    : []
+
   return (
     <Sidebar>
       <SidebarContent>
@@ -70,6 +83,19 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+        {categories.length > 0 && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Categories</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <AllCategoriesMenuItem />
+                {categories.map((category) => (
+                  <CategoryMenuItem key={category.id} categoryName={category.name} />
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
       </SidebarContent>
     </Sidebar>
   )
