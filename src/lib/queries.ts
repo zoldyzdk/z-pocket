@@ -97,3 +97,18 @@ export async function getUserLinks(
 
   return linksWithCategories
 }
+
+export async function getArchivedLinks(userId: string) {
+  const archivedLinks = await db
+    .select({
+      id: links.id,
+      title: links.title,
+      url: links.url,
+      archivedAt: links.archivedAt,
+    })
+    .from(links)
+    .where(and(eq(links.userId, userId), eq(links.isArchived, true)))
+    .orderBy(desc(links.archivedAt))
+
+  return archivedLinks
+}
