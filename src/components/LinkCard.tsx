@@ -1,19 +1,21 @@
 "use client"
 
-import { useState } from "react"
-import Image from "next/image"
+import { archiveLink } from "@/actions/archiveLink"
+import { AddLinkModal } from "@/components/add-link-modal"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Edit, MoreVertical, PencilLine, Tag, Trash2 } from "lucide-react"
-import { cn } from "@/lib/utils"
-import Link from "next/link"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { AddLinkModal } from "@/components/add-link-modal"
+import { cn } from "@/lib/utils"
+import { Archive, Loader2, PencilLine, Tag } from "lucide-react"
+import Image from "next/image"
+import Link from "next/link"
+import { useState, useTransition } from "react"
+import { toast } from "sonner"
 import { DeleteModal } from "./DeleteModal"
 
 interface LinkCardProps {
@@ -47,8 +49,20 @@ export default function LinkCard({
   className,
 }: LinkCardProps) {
   const [imageError, setImageError] = useState(false)
+  const [archiveLoading, startArchiveTransition] = useTransition()
   const fallbackImage = "/no-image.jpg"
   const imageSrc = imageError || !image ? fallbackImage : image
+
+  const handleArchive = (linkId: string) => {
+    startArchiveTransition(async () => {
+      const result = await archiveLink(linkId)
+      if (result.error) {
+        toast.error(result.message)
+        return
+      }
+      toast.success(result.message)
+    })
+  }
 
   return (
     <Card className={cn("group overflow-hidden pt-0 pb-4 shadow-sm transition-shadow hover:shadow-md max-w-[350px] flex flex-col", className)}>
@@ -95,7 +109,23 @@ export default function LinkCard({
           ))}
         </div>
         <div className="space-x-6">
-          <DeleteModal linkId={linkId} />
+          <Tooltip>
+            <TooltipContent>
+              Archive link
+            </TooltipContent>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="shrink-0 text-muted-foreground hover:text-foreground"
+                onClick={() => {
+                  handleArchive(linkId)
+                }}
+              >
+                {archiveLoading ? <Loader2 className="size-5 animate-spin" /> : <Archive className="size-5" />}
+              </Button>
+            </TooltipTrigger>
+          </Tooltip>
           <Tooltip>
             <TooltipContent>
               Edit link
@@ -122,6 +152,7 @@ export default function LinkCard({
               }
             />
           </Tooltip>
+          <DeleteModal linkId={linkId} />
         </div>
 
       </CardFooter>
