@@ -65,6 +65,7 @@ export const links = sqliteTable("links", {
   estimatedReadingTime: integer("estimated_reading_time"), // tempo em minutos
   wordCount: integer("word_count"), // contagem de palavras
   isArchived: integer("is_archived", { mode: "boolean" }).default(false),
+  archivedAt: text("archived_at"),
   createdAt: text("created_at").default(sql`(datetime('now'))`),
   updatedAt: text("updated_at").default(sql`(datetime('now'))`),
 })

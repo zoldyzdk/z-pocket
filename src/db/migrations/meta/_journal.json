@@ -43,6 +43,13 @@
       "when": 1760831649806,
       "tag": "0005_minor_the_captain",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1763311111175,
+      "tag": "0006_boring_the_enforcers",
+      "breakpoints": true
     }
   ]
 }
