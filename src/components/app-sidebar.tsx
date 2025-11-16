@@ -1,5 +1,5 @@
-import { Archive, Calendar, Home, Inbox, Search, Settings } from "lucide-react"
 import { auth } from "@/lib/auth"
+import { Archive, Home } from "lucide-react"
 import { headers } from "next/headers"
 
 import {
@@ -13,11 +13,10 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
-import { ShimmeringText } from "./ui/shimmering-text"
 import { getCategoriesWithLinks } from "@/lib/queries"
-import { CategoryMenuItem } from "./category-menu-item"
-import { AllCategoriesMenuItem } from "./all-categories-menu-item"
 import Link from "next/link"
+import { ShimmeringText } from "./ui/shimmering-text"
+import { CategoriesSection } from "./categories-section"
 
 // Menu items.
 const items = [
@@ -28,14 +27,15 @@ const items = [
   },
   {
     title: "Archived",
-    url: "/dashboard?isArchived=true",
+    url: "/dashboard/archived",
     icon: Archive,
   }
 ]
 
 export async function AppSidebar() {
+  const headersList = await headers();
   const session = await auth.api.getSession({
-    headers: await headers(),
+    headers: headersList,
   })
 
   const categories = session?.user?.id
@@ -69,19 +69,7 @@ export async function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-        {categories.length > 0 && (
-          <SidebarGroup>
-            <SidebarGroupLabel>Categories</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                <AllCategoriesMenuItem />
-                {categories.map((category) => (
-                  <CategoryMenuItem key={category.id} categoryName={category.name} />
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
+        <CategoriesSection categories={categories} />
       </SidebarContent>
     </Sidebar>
   )
