@@ -16,7 +16,7 @@ export function CategoryMenuItem({ categoryName }: CategoryMenuItemProps) {
 
   const handleClick = () => {
     const params = new URLSearchParams(searchParams)
-    
+
     if (isActive) {
       // If already active, clear the category filter
       params.delete("category")
@@ -34,7 +34,7 @@ export function CategoryMenuItem({ categoryName }: CategoryMenuItemProps) {
       <SidebarMenuButton
         onClick={handleClick}
         className={cn(
-          "w-full justify-start",
+          "w-full justify-start cursor-pointer",
           isActive && "bg-accent font-medium"
         )}
       >

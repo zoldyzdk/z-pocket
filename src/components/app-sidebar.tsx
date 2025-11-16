@@ -1,4 +1,4 @@
-import { Calendar, Home, Inbox, Search, Settings } from "lucide-react"
+import { Archive, Calendar, Home, Inbox, Search, Settings } from "lucide-react"
 import { auth } from "@/lib/auth"
 import { headers } from "next/headers"
 
@@ -17,34 +17,20 @@ import { ShimmeringText } from "./ui/shimmering-text"
 import { getCategoriesWithLinks } from "@/lib/queries"
 import { CategoryMenuItem } from "./category-menu-item"
 import { AllCategoriesMenuItem } from "./all-categories-menu-item"
+import Link from "next/link"
 
 // Menu items.
 const items = [
   {
     title: "Home",
-    url: "#",
+    url: "/dashboard",
     icon: Home,
   },
   {
-    title: "Inbox",
-    url: "#",
-    icon: Inbox,
-  },
-  {
-    title: "Calendar",
-    url: "#",
-    icon: Calendar,
-  },
-  {
-    title: "Search",
-    url: "#",
-    icon: Search,
-  },
-  {
-    title: "Settings",
-    url: "#",
-    icon: Settings,
-  },
+    title: "Archived",
+    url: "/dashboard?isArchived=true",
+    icon: Archive,
+  }
 ]
 
 export async function AppSidebar() {
@@ -73,10 +59,10 @@ export async function AppSidebar() {
               {items.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
-                    <a href={item.url}>
+                    <Link href={item.url}>
                       <item.icon />
                       <span>{item.title}</span>
-                    </a>
+                    </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
