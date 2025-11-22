@@ -1,5 +1,5 @@
 import { AppSidebar } from "@/components/app-sidebar"
-import { Navbar } from "@/components/Navbar"
+import { Navbar } from "@/components/Navbar/Navbar"
 import PrivateRoutes from "@/components/PrivateRoutes"
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 
