@@ -2,6 +2,7 @@ import { AppSidebar } from "@/components/app-sidebar"
 import { Navbar } from "@/components/Navbar/Navbar"
 import PrivateRoutes from "@/components/PrivateRoutes"
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
+import { CommandMenu } from "@/components/command-menu"
 
 export default function LoggedAreaLayout({
   children,
@@ -19,6 +20,7 @@ export default function LoggedAreaLayout({
           </SidebarInset>
         </SidebarProvider>
       </PrivateRoutes>
+      <CommandMenu />
     </main>
   )
 }

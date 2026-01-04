@@ -66,10 +66,14 @@ interface AddLinkModalProps {
     categories?: string[]
   }
   trigger?: React.ReactNode
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
 }
 
-export function AddLinkModal({ linkId, initialData, trigger }: AddLinkModalProps) {
-  const [open, setOpen] = useState(false)
+export function AddLinkModal({ linkId, initialData, trigger, open: controlledOpen, onOpenChange: controlledOnOpenChange }: AddLinkModalProps) {
+  const [internalOpen, setInternalOpen] = useState(false)
+  const open = controlledOpen ?? internalOpen
+  const setOpen = controlledOnOpenChange ?? setInternalOpen
   const [isFetchingMetadata, setIsFetchingMetadata] = useState(false)
   const [metadataPreview, setMetadataPreview] = useState<{
     title?: string
@@ -200,15 +204,22 @@ export function AddLinkModal({ linkId, initialData, trigger }: AddLinkModalProps
     }
   }
 
+  const isControlled = controlledOpen !== undefined
+
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger asChild>
-        {trigger || (
+      {trigger && (
+        <DialogTrigger asChild>
+          {trigger}
+        </DialogTrigger>
+      )}
+      {!trigger && !isControlled && (
+        <DialogTrigger asChild>
           <button className={buttonVariants({ variant: "outline", size: "icon" })}>
             <PlusIcon />
           </button>
-        )}
-      </DialogTrigger>
+        </DialogTrigger>
+      )}
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">

@@ -4,6 +4,9 @@ import { SidebarProvider } from "@/components/ui/sidebar"
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers"
 import { getUserLinks } from "@/lib/queries"
+import { SelectLink } from "@/db/schema"
+
+type LinkWithCategories = SelectLink & { categories: string[] }
 
 function formatReadTime(minutes: number | null): string | undefined {
   if (!minutes) return undefined
@@ -54,7 +57,7 @@ export default async function page({
         </div>
       ) : (
         <div className="flex gap-3.5 flex-wrap justify-center">
-          {userLinks.map((link) => (
+          {userLinks.map((link: LinkWithCategories) => (
             <LinkCard
               key={link.id}
               linkId={link.id}
