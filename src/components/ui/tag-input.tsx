@@ -17,7 +17,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
-import { Check, X } from "lucide-react"
+import { X } from "lucide-react"
 import { useEffect, useState, KeyboardEvent } from "react"
 
 interface TagInputProps {
@@ -26,6 +26,38 @@ interface TagInputProps {
   suggestions?: string[]
   placeholder?: string
   className?: string
+}
+
+const DIALOG_MEDIA_QUERY = "(pointer: coarse), (hover: none), (max-width: 640px)"
+
+type LegacyMediaQueryList = MediaQueryList & {
+  addListener?: (listener: () => void) => void
+  removeListener?: (listener: () => void) => void
+}
+
+function useTagInputDialogMode() {
+  const [useDialog, setUseDialog] = useState(false)
+
+  useEffect(() => {
+    if (typeof window === "undefined") return
+
+    const mediaQuery = window.matchMedia(DIALOG_MEDIA_QUERY)
+    const update = () => setUseDialog(mediaQuery.matches)
+
+    update()
+
+    if ("addEventListener" in mediaQuery) {
+      mediaQuery.addEventListener("change", update)
+      return () => mediaQuery.removeEventListener("change", update)
+    }
+
+    const legacyMediaQuery = mediaQuery as LegacyMediaQueryList
+    legacyMediaQuery.addListener?.(update)
+
+    return () => legacyMediaQuery.removeListener?.(update)
+  }, [])
+
+  return useDialog
 }
 
 export function TagInput({
@@ -37,30 +69,16 @@ export function TagInput({
 }: TagInputProps) {
   const [open, setOpen] = useState(false)
   const [inputValue, setInputValue] = useState("")
-  const [useDialog, setUseDialog] = useState(false)
-
-  useEffect(() => {
-    if (typeof window === "undefined") return
-    const mediaQuery = window.matchMedia(
-      "(pointer: coarse), (hover: none), (max-width: 640px)"
-    )
-    const update = () => setUseDialog(mediaQuery.matches)
-    update()
-    if ("addEventListener" in mediaQuery) {
-      mediaQuery.addEventListener("change", update)
-      return () => mediaQuery.removeEventListener("change", update)
-    }
-    const legacyMediaQuery = mediaQuery as MediaQueryList & {
-      addListener: (listener: () => void) => void
-      removeListener: (listener: () => void) => void
-    }
-    legacyMediaQuery.addListener(update)
-    return () => legacyMediaQuery.removeListener(update)
-  }, [])
+  const useDialog = useTagInputDialogMode()
 
   const addTag = (tag: string) => {
     const normalizedTag = tag.trim()
-    if (normalizedTag && !value.includes(normalizedTag)) {
+    const normalizedTagLower = normalizedTag.toLowerCase()
+    const hasSelectedMatch = value.some(
+      (selectedTag) => selectedTag.toLowerCase() === normalizedTagLower
+    )
+
+    if (normalizedTag && !hasSelectedMatch) {
       onChange([...value, normalizedTag])
     }
     setInputValue("")
@@ -81,15 +99,35 @@ export function TagInput({
     }
   }
 
-  // Filter suggestions to exclude already selected tags
-  const availableSuggestions = suggestions.filter(
-    (suggestion) => !value.includes(suggestion)
-  )
+  const normalizedInput = inputValue.trim()
+  const normalizedInputLower = normalizedInput.toLowerCase()
+  const selectedTagLookup = new Set(value.map((tag) => tag.toLowerCase()))
+  const filteredSuggestions: string[] = []
+  let hasExactSuggestionMatch = false
 
-  // Check if input matches any suggestion
-  const exactMatch = availableSuggestions.some(
-    (s) => s.toLowerCase() === inputValue.toLowerCase()
-  )
+  for (const suggestion of suggestions) {
+    const normalizedSuggestion = suggestion.toLowerCase()
+
+    if (selectedTagLookup.has(normalizedSuggestion)) {
+      continue
+    }
+
+    if (normalizedSuggestion === normalizedInputLower) {
+      hasExactSuggestionMatch = true
+    }
+
+    if (
+      normalizedInputLower === "" ||
+      normalizedSuggestion.includes(normalizedInputLower)
+    ) {
+      filteredSuggestions.push(suggestion)
+    }
+  }
+
+  const showCreateOption =
+    normalizedInput.length > 0 &&
+    !selectedTagLookup.has(normalizedInputLower) &&
+    !hasExactSuggestionMatch
 
   const commandContent = (
     <>
@@ -100,54 +138,38 @@ export function TagInput({
         onKeyDown={handleKeyDown}
       />
       <CommandList className="max-h-60 overflow-y-auto">
-        {availableSuggestions.length === 0 && !inputValue && (
+        {filteredSuggestions.length === 0 && normalizedInput.length === 0 && (
           <CommandEmpty>No categories yet.</CommandEmpty>
         )}
-        {availableSuggestions.length === 0 && inputValue && (
+        {filteredSuggestions.length === 0 && normalizedInput.length > 0 && (
           <CommandEmpty>
             Press Enter to create &quot;{inputValue}&quot;
           </CommandEmpty>
         )}
-        {availableSuggestions.length > 0 && (
+        {filteredSuggestions.length > 0 && (
           <CommandGroup>
-            {availableSuggestions
-              .filter((suggestion) =>
-                suggestion.toLowerCase().includes(inputValue.toLowerCase())
-              )
-              .map((suggestion) => (
-                <CommandItem
-                  key={suggestion}
-                  value={suggestion}
-                  onSelect={() => addTag(suggestion)}
-                >
-                  <Check
-                    className={cn(
-                      "mr-2 h-4 w-4",
-                      value.includes(suggestion)
-                        ? "opacity-100"
-                        : "opacity-0"
-                    )}
-                  />
-                  {suggestion}
-                </CommandItem>
-              ))}
+            {filteredSuggestions.map((suggestion) => (
+              <CommandItem
+                key={suggestion}
+                value={suggestion}
+                onSelect={() => addTag(suggestion)}
+              >
+                {suggestion}
+              </CommandItem>
+            ))}
           </CommandGroup>
         )}
-        {inputValue &&
-          !exactMatch &&
-          availableSuggestions.some((s) =>
-            s.toLowerCase().includes(inputValue.toLowerCase())
-          ) && (
-            <CommandGroup>
-              <CommandItem
-                value={inputValue}
-                onSelect={() => addTag(inputValue)}
-                className="text-foreground"
-              >
-                Create &quot;{inputValue}&quot;
-              </CommandItem>
-            </CommandGroup>
-          )}
+        {showCreateOption ? (
+          <CommandGroup>
+            <CommandItem
+              value={normalizedInput}
+              onSelect={() => addTag(normalizedInput)}
+              className="text-foreground"
+            >
+              Create &quot;{normalizedInput}&quot;
+            </CommandItem>
+          </CommandGroup>
+        ) : null}
       </CommandList>
     </>
   )
@@ -188,6 +210,7 @@ export function TagInput({
             onOpenChange={setOpen}
             title="Categories"
             description="Search or create categories"
+            commandProps={{ shouldFilter: false }}
           >
             {commandContent}
           </CommandDialog>
