@@ -204,7 +204,11 @@ export function TagInput({
               {placeholder}
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-full p-0" align="start">
+          <PopoverContent
+            className="w-full p-0"
+            align="start"
+            onWheel={(e) => e.stopPropagation()}
+          >
             <Command shouldFilter={false}>{commandContent}</Command>
           </PopoverContent>
         </Popover>
