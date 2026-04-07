@@ -142,7 +142,7 @@ export function TagInput({
               <CommandItem
                 value={inputValue}
                 onSelect={() => addTag(inputValue)}
-                className="text-primary"
+                className="text-foreground"
               >
                 Create &quot;{inputValue}&quot;
               </CommandItem>
