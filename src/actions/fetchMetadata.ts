@@ -7,9 +7,100 @@ type MetadataResponse = {
   error?: string
 }
 
+const YOUTUBE_VIDEO_ID = /^[\w-]{11}$/
+
+/**
+ * Extract a YouTube video ID from common URL shapes (watch, youtu.be, embed, shorts, live).
+ */
+function extractYouTubeVideoId(rawUrl: string): string | null {
+  try {
+    const url = new URL(rawUrl)
+    const host = url.hostname.replace(/^www\./, "")
+
+    if (host === "youtu.be") {
+      const id = url.pathname.split("/").filter(Boolean)[0]?.split("?")[0]
+      return id && YOUTUBE_VIDEO_ID.test(id) ? id : null
+    }
+
+    if (host !== "youtube.com" && !host.endsWith(".youtube.com") && host !== "youtube-nocookie.com") {
+      return null
+    }
+
+    const fromQuery = url.searchParams.get("v")
+    if (fromQuery && YOUTUBE_VIDEO_ID.test(fromQuery)) {
+      return fromQuery
+    }
+
+    const pathMatch = url.pathname.match(/^\/(embed|shorts|live)\/([\w-]{11})/)
+    if (pathMatch) {
+      return pathMatch[2]
+    }
+
+    const legacy = url.pathname.match(/^\/v\/([\w-]{11})/)
+    if (legacy) {
+      return legacy[1]
+    }
+
+    return null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Fetch title, thumbnail, and channel name via YouTube's public oEmbed endpoint (no API key).
+ */
+async function fetchYouTubeMetadata(videoId: string): Promise<MetadataResponse | null> {
+  const watchUrl = `https://www.youtube.com/watch?v=${videoId}`
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), 10000)
+
+  try {
+    const oembedUrl = new URL("https://www.youtube.com/oembed")
+    oembedUrl.searchParams.set("url", watchUrl)
+    oembedUrl.searchParams.set("format", "json")
+
+    const response = await fetch(oembedUrl.toString(), {
+      signal: controller.signal,
+      headers: {
+        Accept: "application/json",
+        "User-Agent": "Mozilla/5.0 (compatible; LinkMetadataBot/1.0)",
+      },
+    })
+
+    if (!response.ok) {
+      return null
+    }
+
+    const data = (await response.json()) as {
+      title?: string
+      author_name?: string
+      thumbnail_url?: string
+    }
+
+    const metadata: MetadataResponse = {}
+
+    if (data.title) {
+      metadata.title = data.title.replace(/\s+/g, " ").trim()
+    }
+    if (data.thumbnail_url?.startsWith("http")) {
+      metadata.imageUrl = data.thumbnail_url
+    }
+    if (data.author_name) {
+      metadata.description = `Video by ${data.author_name}`.replace(/\s+/g, " ").trim()
+    }
+
+    return Object.keys(metadata).length > 0 ? metadata : null
+  } catch {
+    return null
+  } finally {
+    clearTimeout(timeoutId)
+  }
+}
+
 /**
  * Server function to fetch metadata from a URL.
- * Extracts Open Graph tags and falls back to standard HTML tags.
+ * YouTube links use the oEmbed API; other URLs use Open Graph / HTML tags.
  * @param url - The URL to fetch metadata from
  * @returns Promise with metadata or error
  */
@@ -28,6 +119,14 @@ export const fetchMetadata = async (url: string): Promise<MetadataResponse> => {
       new URL(urlWithProtocol)
     } catch {
       return { error: "Invalid URL format" }
+    }
+
+    const youtubeId = extractYouTubeVideoId(urlWithProtocol)
+    if (youtubeId) {
+      const fromOembed = await fetchYouTubeMetadata(youtubeId)
+      if (fromOembed) {
+        return fromOembed
+      }
     }
 
     // Fetch the HTML content with timeout
