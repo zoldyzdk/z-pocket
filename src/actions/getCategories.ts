@@ -3,7 +3,7 @@
 import { db } from "@/db"
 import { categories } from "@/db/schema"
 import { auth } from "@/lib/auth"
-import { eq } from "drizzle-orm"
+import { asc, eq } from "drizzle-orm"
 import { headers } from "next/headers"
 
 /**
@@ -23,11 +23,11 @@ export const getCategories = async (): Promise<string[]> => {
 
     // Fetch all categories for the user
     const userCategories = await db
-      .select()
+      .select({ name: categories.name })
       .from(categories)
       .where(eq(categories.userId, session.user.id))
+      .orderBy(asc(categories.name))
 
-    // Return just the category names for autocomplete
     return userCategories.map((cat) => cat.name)
   } catch (error) {
     console.error("Error fetching categories:", error)
