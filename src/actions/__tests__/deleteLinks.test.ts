@@ -1,5 +1,8 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest"
 
+// Global vitest.setup mocks this for component tests; exercise the real action here.
+vi.unmock("@/actions/deleteLinks")
+
 const getSessionMock = vi.fn()
 vi.mock("@/lib/auth", () => ({
   auth: {

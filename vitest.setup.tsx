@@ -89,3 +89,11 @@ vi.mock('@/actions/manageCategories', () => ({
     createCategory: vi.fn(),
 }))
 
+vi.mock('@/actions/archiveLink', () => ({
+    archiveLink: vi.fn(),
+}))
+
+vi.mock('@/actions/deleteLinks', () => ({
+    deleteLinks: vi.fn(),
+}))
+
