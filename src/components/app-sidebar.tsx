@@ -1,5 +1,5 @@
 import { auth } from "@/lib/auth"
-import { Archive, Home } from "lucide-react"
+import { Archive, Home, Tags } from "lucide-react"
 import { headers } from "next/headers"
 
 import {
@@ -29,7 +29,12 @@ const items = [
     title: "Archived",
     url: "/dashboard/archived",
     icon: Archive,
-  }
+  },
+  {
+    title: "Tags",
+    url: "/dashboard/tags",
+    icon: Tags,
+  },
 ]
 
 export async function AppSidebar() {

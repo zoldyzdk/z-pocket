@@ -86,5 +86,6 @@ vi.mock('@/actions/manageCategories', () => ({
     renameCategory: vi.fn(),
     deleteCategory: vi.fn(),
     getCategoryDeletePreview: vi.fn(),
+    createCategory: vi.fn(),
 }))
 

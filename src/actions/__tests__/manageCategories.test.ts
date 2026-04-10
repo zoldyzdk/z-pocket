@@ -1,5 +1,8 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest"
 
+// Use real server actions here; vitest.setup.tsx mocks this module for component tests.
+vi.unmock("@/actions/manageCategories")
+
 const getSessionMock = vi.fn()
 vi.mock("@/lib/auth", () => ({
   auth: {

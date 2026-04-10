@@ -30,6 +30,8 @@ import { toast } from "sonner"
 interface CategoryActionsMenuProps {
   categoryId: string
   categoryName: string
+  /** Sidebar row (default) or table/actions column */
+  triggerVariant?: "sidebar" | "inline"
 }
 
 function usageDescription(count: number): string {
@@ -42,7 +44,11 @@ function usageDescription(count: number): string {
   return `This tag is used on ${count} links.`
 }
 
-export function CategoryActionsMenu({ categoryId, categoryName }: CategoryActionsMenuProps) {
+export function CategoryActionsMenu({
+  categoryId,
+  categoryName,
+  triggerVariant = "sidebar",
+}: CategoryActionsMenuProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [renameOpen, setRenameOpen] = useState(false)
@@ -149,15 +155,32 @@ export function CategoryActionsMenu({ categoryId, categoryName }: CategoryAction
     <>
       <DropdownMenu modal={false}>
         <DropdownMenuTrigger asChild>
-          <SidebarMenuAction
-            className="data-[state=open]:bg-sidebar-accent"
-            aria-label={`Actions for tag ${categoryName}`}
-          >
-            <MoreHorizontal className="size-4" />
-            <span className="sr-only">Open tag actions</span>
-          </SidebarMenuAction>
+          {triggerVariant === "sidebar" ? (
+            <SidebarMenuAction
+              className="data-[state=open]:bg-sidebar-accent"
+              aria-label={`Actions for tag ${categoryName}`}
+            >
+              <MoreHorizontal className="size-4" />
+              <span className="sr-only">Open tag actions</span>
+            </SidebarMenuAction>
+          ) : (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="size-8 shrink-0"
+              aria-label={`Actions for tag ${categoryName}`}
+            >
+              <MoreHorizontal className="size-4" />
+              <span className="sr-only">Open tag actions</span>
+            </Button>
+          )}
         </DropdownMenuTrigger>
-        <DropdownMenuContent side="right" align="end" className="w-40">
+        <DropdownMenuContent
+          side={triggerVariant === "sidebar" ? "right" : "bottom"}
+          align="end"
+          className="w-40"
+        >
           <DropdownMenuItem onSelect={() => setRenameOpen(true)}>Rename</DropdownMenuItem>
           <DropdownMenuItem
             onSelect={() => setDeleteOpen(true)}
