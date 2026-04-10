@@ -33,7 +33,7 @@ export function CategoriesSection({ categories }: CategoriesSectionProps) {
                 <SidebarMenu>
                     <AllCategoriesMenuItem />
                     {categories.map((category) => (
-                        <CategoryMenuItem key={category.id} categoryName={category.name} />
+                        <CategoryMenuItem key={category.id} category={category} />
                     ))}
                 </SidebarMenu>
             </SidebarGroupContent>
