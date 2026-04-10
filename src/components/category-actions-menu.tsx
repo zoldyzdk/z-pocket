@@ -36,12 +36,12 @@ interface CategoryActionsMenuProps {
 
 function usageDescription(count: number): string {
   if (count === 0) {
-    return "This tag is not used on any active links (same as the Usage column on Tags)."
+    return "Deleting removes this tag from all links, including archived ones. It is not used on any active links right now (same count as the Usage column on Tags)."
   }
   if (count === 1) {
-    return "This tag is used on 1 active link (same as the Usage column on Tags)."
+    return "Deleting removes this tag from all links, including archived ones. It is used on 1 active link (same count as the Usage column on Tags)."
   }
-  return `This tag is used on ${count} active links (same as the Usage column on Tags).`
+  return `Deleting removes this tag from all links, including archived ones. It is used on ${count} active links (same count as the Usage column on Tags).`
 }
 
 export function CategoryActionsMenu({
