@@ -68,10 +68,11 @@ test("delete flow shows usage count from getCategoryDeletePreview", async () => 
 })
 
 describe("TagsManagement", () => {
-  test("renders tags with usage counts in the table", () => {
+  test("renders tags with usage counts in alphabetical row order", () => {
     render(
       <TagsManagement
         initialCategories={[
+          { id: "z", name: "Zeta", usageCount: 1 },
           { id: "a", name: "Alpha", usageCount: 0 },
           { id: "b", name: "Beta", usageCount: 12 },
         ]}
@@ -81,6 +82,13 @@ describe("TagsManagement", () => {
     expect(screen.getByRole("columnheader", { name: /^name$/i })).toBeInTheDocument()
     expect(screen.getByRole("columnheader", { name: /^usage$/i })).toBeInTheDocument()
 
+    const dataRows = screen.getAllByRole("row").slice(1)
+    expect(dataRows.map((row) => within(row).getAllByRole("cell")[0].textContent)).toEqual([
+      "Alpha",
+      "Beta",
+      "Zeta",
+    ])
+
     const alphaRow = screen.getByRole("row", { name: /alpha/i })
     expect(within(alphaRow).getByText("Alpha")).toBeInTheDocument()
     expect(within(alphaRow).getByText("0")).toBeInTheDocument()
@@ -88,6 +96,10 @@ describe("TagsManagement", () => {
     const betaRow = screen.getByRole("row", { name: /beta/i })
     expect(within(betaRow).getByText("Beta")).toBeInTheDocument()
     expect(within(betaRow).getByText("12")).toBeInTheDocument()
+
+    const zetaRow = screen.getByRole("row", { name: /zeta/i })
+    expect(within(zetaRow).getByText("Zeta")).toBeInTheDocument()
+    expect(within(zetaRow).getByText("1")).toBeInTheDocument()
   })
 
   test("shows empty state when there are no tags", () => {

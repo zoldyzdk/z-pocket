@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/table"
 import { Loader2, Plus } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { toast } from "sonner"
 
 export type TagWithUsage = {
@@ -37,6 +37,13 @@ interface TagsManagementProps {
 
 export function TagsManagement({ initialCategories }: TagsManagementProps) {
   const router = useRouter()
+  const sortedCategories = useMemo(
+    () =>
+      [...initialCategories].sort((a, b) =>
+        a.name.localeCompare(b.name, undefined, { sensitivity: "base" }),
+      ),
+    [initialCategories],
+  )
   const [createOpen, setCreateOpen] = useState(false)
   const [newName, setNewName] = useState("")
   const [isCreating, setIsCreating] = useState(false)
@@ -97,7 +104,7 @@ export function TagsManagement({ initialCategories }: TagsManagementProps) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {initialCategories.map((row) => (
+              {sortedCategories.map((row) => (
                 <TableRow key={row.id}>
                   <TableCell className="font-medium">{row.name}</TableCell>
                   <TableCell className="text-right tabular-nums">{row.usageCount}</TableCell>
