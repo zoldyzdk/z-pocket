@@ -35,8 +35,10 @@ async function getSessionUserId(): Promise<string | null> {
   return session?.user?.id ?? null
 }
 
-async function findCategoryByKeyForUser(userId: string, key: string) {
-  const rows = await db
+type CategoryDb = Pick<typeof db, "select" | "insert" | "update" | "delete">
+
+async function findCategoryByKeyForUser(client: CategoryDb, userId: string, key: string) {
+  const rows = await client
     .select()
     .from(categories)
     .where(
@@ -46,8 +48,8 @@ async function findCategoryByKeyForUser(userId: string, key: string) {
   return rows[0] ?? null
 }
 
-async function getOwnedCategory(userId: string, categoryId: string) {
-  const rows = await db
+async function getOwnedCategory(client: CategoryDb, userId: string, categoryId: string) {
+  const rows = await client
     .select()
     .from(categories)
     .where(and(eq(categories.id, categoryId), eq(categories.userId, userId)))
@@ -72,18 +74,25 @@ export async function createCategory(input: { name: string }): Promise<CreateCat
     return { ok: false, error: "Tag name is required." }
   }
 
-  const existing = await findCategoryByKeyForUser(userId, key)
-  if (existing) {
+  const outcome = await db.transaction(async (tx) => {
+    const existing = await findCategoryByKeyForUser(tx, userId, key)
+    if (existing) {
+      return { kind: "duplicate" as const }
+    }
+
+    await tx.insert(categories).values({
+      id: nanoid(),
+      userId,
+      name,
+      color: null,
+      icon: null,
+    })
+    return { kind: "created" as const }
+  })
+
+  if (outcome.kind === "duplicate") {
     return { ok: false, error: "Tag already exists." }
   }
-
-  await db.insert(categories).values({
-    id: nanoid(),
-    userId,
-    name,
-    color: null,
-    icon: null,
-  })
 
   revalidateCategoryViews()
   return { ok: true }
@@ -104,30 +113,41 @@ export async function renameCategory(input: {
     return { ok: false, error: "Tag name is required." }
   }
 
-  const owned = await getOwnedCategory(userId, input.categoryId)
-  if (!owned) {
+  const outcome = await db.transaction(async (tx) => {
+    const owned = await getOwnedCategory(tx, userId, input.categoryId)
+    if (!owned) {
+      return { kind: "notfound" as const }
+    }
+
+    const conflicting = await tx
+      .select()
+      .from(categories)
+      .where(
+        and(
+          eq(categories.userId, userId),
+          sql`lower(${categories.name}) = ${key}`,
+          ne(categories.id, input.categoryId),
+        ),
+      )
+      .limit(1)
+    if (conflicting.length > 0) {
+      return { kind: "duplicate" as const }
+    }
+
+    await tx
+      .update(categories)
+      .set({ name, updatedAt: sql`(datetime('now'))` })
+      .where(and(eq(categories.id, input.categoryId), eq(categories.userId, userId)))
+
+    return { kind: "renamed" as const }
+  })
+
+  if (outcome.kind === "notfound") {
     return { ok: false, error: NOT_FOUND }
   }
-
-  const conflicting = await db
-    .select()
-    .from(categories)
-    .where(
-      and(
-        eq(categories.userId, userId),
-        sql`lower(${categories.name}) = ${key}`,
-        ne(categories.id, input.categoryId),
-      ),
-    )
-    .limit(1)
-  if (conflicting.length > 0) {
+  if (outcome.kind === "duplicate") {
     return { ok: false, error: "Tag already exists." }
   }
-
-  await db
-    .update(categories)
-    .set({ name, updatedAt: sql`(datetime('now'))` })
-    .where(and(eq(categories.id, input.categoryId), eq(categories.userId, userId)))
 
   revalidateCategoryViews()
   return { ok: true }
@@ -141,7 +161,7 @@ export async function getCategoryDeletePreview(input: {
     return { ok: false, error: UNAUTHED }
   }
 
-  const owned = await getOwnedCategory(userId, input.categoryId)
+  const owned = await getOwnedCategory(db, userId, input.categoryId)
   if (!owned) {
     return { ok: false, error: NOT_FOUND }
   }
@@ -160,24 +180,32 @@ export async function deleteCategory(input: { categoryId: string }): Promise<Del
     return { ok: false, error: UNAUTHED }
   }
 
-  const owned = await getOwnedCategory(userId, input.categoryId)
-  if (!owned) {
-    return { ok: false, error: NOT_FOUND }
+  const result = await db.transaction(async (tx) => {
+    const owned = await getOwnedCategory(tx, userId, input.categoryId)
+    if (!owned) {
+      return { ok: false as const, error: NOT_FOUND }
+    }
+
+    const [countRow] = await tx
+      .select({ count: sql<number>`count(*)` })
+      .from(linkCategories)
+      .where(eq(linkCategories.categoryId, input.categoryId))
+
+    const detachedLinks = Number(countRow?.count ?? 0)
+
+    await tx.delete(linkCategories).where(eq(linkCategories.categoryId, input.categoryId))
+
+    await tx
+      .delete(categories)
+      .where(and(eq(categories.id, input.categoryId), eq(categories.userId, userId)))
+
+    return { ok: true as const, detachedLinks }
+  })
+
+  if (!result.ok) {
+    return result
   }
 
-  const [countRow] = await db
-    .select({ count: sql<number>`count(*)` })
-    .from(linkCategories)
-    .where(eq(linkCategories.categoryId, input.categoryId))
-
-  const detachedLinks = Number(countRow?.count ?? 0)
-
-  await db.delete(linkCategories).where(eq(linkCategories.categoryId, input.categoryId))
-
-  await db
-    .delete(categories)
-    .where(and(eq(categories.id, input.categoryId), eq(categories.userId, userId)))
-
   revalidateCategoryViews()
-  return { ok: true, detachedLinks }
+  return result
 }

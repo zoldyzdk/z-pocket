@@ -27,6 +27,7 @@ const {
   updateWhereMock,
   deleteMock,
   deleteWhereMock,
+  transactionMock,
 } = vi.hoisted(() => {
   const selectMockInner = vi.fn()
   const insertValuesMockInner = vi.fn().mockResolvedValue(undefined)
@@ -39,6 +40,7 @@ const {
   })
   const deleteWhereMockInner = vi.fn().mockResolvedValue(undefined)
   const deleteMockInner = vi.fn().mockReturnValue({ where: deleteWhereMockInner })
+  const transactionMockInner = vi.fn()
 
   return {
     selectMock: selectMockInner,
@@ -49,8 +51,20 @@ const {
     updateWhereMock: updateWhereMockInner,
     deleteMock: deleteMockInner,
     deleteWhereMock: deleteWhereMockInner,
+    transactionMock: transactionMockInner,
   }
 })
+
+function makeTx() {
+  return {
+    get select() {
+      return selectMock
+    },
+    insert: insertMock,
+    update: updateMock,
+    delete: deleteMock,
+  }
+}
 
 vi.mock("@/db", () => ({
   db: {
@@ -60,6 +74,7 @@ vi.mock("@/db", () => ({
     insert: insertMock,
     update: updateMock,
     delete: deleteMock,
+    transaction: transactionMock,
   },
 }))
 
@@ -111,6 +126,9 @@ describe("manageCategories", () => {
     insertValuesMock.mockResolvedValue(undefined)
     updateWhereMock.mockResolvedValue(undefined)
     deleteWhereMock.mockResolvedValue(undefined)
+    transactionMock.mockImplementation(async (fn: (tx: ReturnType<typeof makeTx>) => Promise<unknown>) => {
+      return fn(makeTx())
+    })
   })
 
   afterEach(() => {
@@ -138,8 +156,22 @@ describe("manageCategories", () => {
     if (!result.ok) {
       expect(result.error).toBe("Tag already exists.")
     }
+    expect(transactionMock).toHaveBeenCalledTimes(1)
     expect(insertMock).not.toHaveBeenCalled()
     expect(revalidatePathMock).not.toHaveBeenCalled()
+  })
+
+  test("createCategory inserts inside a transaction when name is new", async () => {
+    mockSession("user-1")
+    enqueueSelect([])
+
+    const result = await createCategory({ name: "Fresh" })
+
+    expect(result.ok).toBe(true)
+    expect(transactionMock).toHaveBeenCalledTimes(1)
+    expect(insertMock).toHaveBeenCalled()
+    expect(insertValuesMock).toHaveBeenCalled()
+    expect(revalidatePathMock).toHaveBeenCalledWith("/dashboard")
   })
 
   test("renameCategory updates owned category name", async () => {
@@ -160,6 +192,7 @@ describe("manageCategories", () => {
     const result = await renameCategory({ categoryId: "cat-1", newName: "TypeScript" })
 
     expect(result.ok).toBe(true)
+    expect(transactionMock).toHaveBeenCalledTimes(1)
     expect(updateMock).toHaveBeenCalled()
     expect(updateSetMock).toHaveBeenCalledWith(
       expect.objectContaining({ name: "TypeScript" }),
@@ -190,6 +223,7 @@ describe("manageCategories", () => {
     if (result.ok) {
       expect(result.detachedLinks).toBe(7)
     }
+    expect(transactionMock).toHaveBeenCalledTimes(1)
     expect(deleteWhereMock).toHaveBeenCalledTimes(2)
     expect(revalidatePathMock).toHaveBeenCalledWith("/dashboard")
     expect(revalidatePathMock).toHaveBeenCalledWith("/dashboard/tags")
