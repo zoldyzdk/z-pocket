@@ -41,8 +41,8 @@ test("tag actions menu lists Rename and Delete", async () => {
   openTagActionsMenu()
 
   await waitFor(() => {
-    expect(screen.getByRole("menuitem", { name: /^rename$/i })).toBeDefined()
-    expect(screen.getByRole("menuitem", { name: /^delete$/i })).toBeDefined()
+    expect(screen.getByRole("menuitem", { name: /^rename$/i })).toBeInTheDocument()
+    expect(screen.getByRole("menuitem", { name: /^delete$/i })).toBeInTheDocument()
   })
 })
 
@@ -53,13 +53,13 @@ test("delete flow shows usage count from getCategoryDeletePreview", async () => 
 
   openTagActionsMenu()
   await waitFor(() => {
-    expect(screen.getByRole("menuitem", { name: /^delete$/i })).toBeDefined()
+    expect(screen.getByRole("menuitem", { name: /^delete$/i })).toBeInTheDocument()
   })
 
   fireEvent.click(screen.getByRole("menuitem", { name: /^delete$/i }))
 
   const dialog = await screen.findByRole("dialog")
   await waitFor(() => {
-    expect(within(dialog).getByText(/7 links/i)).toBeDefined()
+    expect(within(dialog).getByText(/7 links/i)).toBeInTheDocument()
   })
 })

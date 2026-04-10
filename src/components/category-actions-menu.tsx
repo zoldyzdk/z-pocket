@@ -24,7 +24,7 @@ import { Input } from "@/components/ui/input"
 import { SidebarMenuAction } from "@/components/ui/sidebar"
 import { Loader2, MoreHorizontal } from "lucide-react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { useEffect, useState, useTransition } from "react"
+import { useEffect, useState } from "react"
 import { toast } from "sonner"
 
 interface CategoryActionsMenuProps {
@@ -50,7 +50,8 @@ export function CategoryActionsMenu({ categoryId, categoryName }: CategoryAction
   const [renameValue, setRenameValue] = useState(categoryName)
   const [usageCount, setUsageCount] = useState<number | null>(null)
   const [previewError, setPreviewError] = useState<string | null>(null)
-  const [isPending, startTransition] = useTransition()
+  const [isRenaming, setIsRenaming] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   useEffect(() => {
     if (renameOpen) {
@@ -101,35 +102,47 @@ export function CategoryActionsMenu({ categoryId, categoryName }: CategoryAction
       toast.error("Tag name is required.")
       return
     }
-    startTransition(async () => {
-      const result = await renameCategory({ categoryId, newName: trimmed })
-      if (!result.ok) {
-        toast.error(result.error)
-        return
+    if (isRenaming) return
+    setIsRenaming(true)
+    void (async () => {
+      try {
+        const result = await renameCategory({ categoryId, newName: trimmed })
+        if (!result.ok) {
+          toast.error(result.error)
+          return
+        }
+        toast.success("Tag renamed.")
+        setRenameOpen(false)
+        syncUrlAfterCategoryNameChange(trimmed)
+        router.refresh()
+      } finally {
+        setIsRenaming(false)
       }
-      toast.success("Tag renamed.")
-      setRenameOpen(false)
-      syncUrlAfterCategoryNameChange(trimmed)
-      router.refresh()
-    })
+    })()
   }
 
   const handleDelete = () => {
-    startTransition(async () => {
-      const result = await deleteCategory({ categoryId })
-      if (!result.ok) {
-        toast.error(result.error)
-        return
+    if (isDeleting) return
+    setIsDeleting(true)
+    void (async () => {
+      try {
+        const result = await deleteCategory({ categoryId })
+        if (!result.ok) {
+          toast.error(result.error)
+          return
+        }
+        toast.success(
+          result.detachedLinks > 0
+            ? `Tag deleted. Removed from ${result.detachedLinks} link${result.detachedLinks === 1 ? "" : "s"}.`
+            : "Tag deleted.",
+        )
+        setDeleteOpen(false)
+        syncUrlAfterCategoryNameChange(null)
+        router.refresh()
+      } finally {
+        setIsDeleting(false)
       }
-      toast.success(
-        result.detachedLinks > 0
-          ? `Tag deleted. Removed from ${result.detachedLinks} link${result.detachedLinks === 1 ? "" : "s"}.`
-          : "Tag deleted.",
-      )
-      setDeleteOpen(false)
-      syncUrlAfterCategoryNameChange(null)
-      router.refresh()
-    })
+    })()
   }
 
   return (
@@ -177,8 +190,8 @@ export function CategoryActionsMenu({ categoryId, categoryName }: CategoryAction
             <Button type="button" variant="outline" onClick={() => setRenameOpen(false)}>
               Cancel
             </Button>
-            <Button type="button" onClick={handleRename} disabled={isPending}>
-              {isPending ? <Loader2 className="size-4 animate-spin" /> : "Save"}
+            <Button type="button" onClick={handleRename} disabled={isRenaming}>
+              {isRenaming ? <Loader2 className="size-4 animate-spin" /> : "Save"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -211,9 +224,9 @@ export function CategoryActionsMenu({ categoryId, categoryName }: CategoryAction
               type="button"
               variant="destructive"
               onClick={handleDelete}
-              disabled={isPending || previewError !== null || usageCount === null}
+              disabled={isDeleting || previewError !== null || usageCount === null}
             >
-              {isPending ? <Loader2 className="size-4 animate-spin" /> : "Delete tag"}
+              {isDeleting ? <Loader2 className="size-4 animate-spin" /> : "Delete tag"}
             </Button>
           </DialogFooter>
         </DialogContent>
