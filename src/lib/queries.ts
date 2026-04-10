@@ -1,6 +1,6 @@
 import { db } from "@/db"
 import { links, linkCategories, categories } from "@/db/schema"
-import { and, eq, desc, or, like, inArray } from "drizzle-orm"
+import { and, asc, count, desc, eq, inArray, like, or } from "drizzle-orm"
 
 export async function getCategoriesWithLinks(userId: string) {
   const categoriesWithLinks = await db
@@ -14,6 +14,34 @@ export async function getCategoriesWithLinks(userId: string) {
     .where(and(eq(categories.userId, userId), eq(links.isArchived, false)))
 
   return categoriesWithLinks
+}
+
+export async function getUserCategoriesWithUsage(userId: string) {
+  const rows = await db
+    .select({
+      id: categories.id,
+      name: categories.name,
+      usageCount: count(links.id),
+    })
+    .from(categories)
+    .leftJoin(linkCategories, eq(categories.id, linkCategories.categoryId))
+    .leftJoin(
+      links,
+      and(
+        eq(linkCategories.linkId, links.id),
+        eq(links.userId, userId),
+        eq(links.isArchived, false)
+      )
+    )
+    .where(eq(categories.userId, userId))
+    .groupBy(categories.id, categories.name)
+    .orderBy(asc(categories.name))
+
+  return rows.map((row) => ({
+    id: row.id,
+    name: row.name,
+    usageCount: Number(row.usageCount ?? 0),
+  }))
 }
 
 export async function getUserLinks(
