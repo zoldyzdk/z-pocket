@@ -162,6 +162,9 @@ describe("addLink category matching", () => {
         categoryId: "cat-existing",
       }),
     )
+
+    expect(revalidatePathMock).toHaveBeenCalledWith("/dashboard")
+    expect(revalidatePathMock).toHaveBeenCalledWith("/dashboard/tags")
   })
 })
 
@@ -202,5 +205,8 @@ describe("updateLink category matching", () => {
         categoryId: "cat-existing",
       }),
     )
+
+    expect(revalidatePathMock).toHaveBeenCalledWith("/dashboard")
+    expect(revalidatePathMock).toHaveBeenCalledWith("/dashboard/tags")
   })
 })

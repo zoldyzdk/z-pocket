@@ -121,8 +121,8 @@ export const updateLink = async (linkId: string, formData: LinkFormData): Update
       }
     }
 
-    // Revalidate the dashboard page to show the updated link
     revalidatePath("/dashboard")
+    revalidatePath("/dashboard/tags")
 
     return {
       success: true,

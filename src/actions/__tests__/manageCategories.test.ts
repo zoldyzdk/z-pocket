@@ -106,12 +106,14 @@ function setupSelectMockFromQueue() {
     if (item.mode === "limit") {
       return {
         from: vi.fn().mockReturnThis(),
+        innerJoin: vi.fn().mockReturnThis(),
         where: vi.fn().mockReturnThis(),
         limit: vi.fn().mockReturnValue(promise),
       }
     }
     return {
       from: vi.fn().mockReturnThis(),
+      innerJoin: vi.fn().mockReturnThis(),
       where: vi.fn().mockReturnValue(promise),
     }
   })
@@ -175,6 +177,7 @@ describe("manageCategories", () => {
     expect(insertMock).toHaveBeenCalled()
     expect(insertValuesMock).toHaveBeenCalled()
     expect(revalidatePathMock).toHaveBeenCalledWith("/dashboard")
+    expect(revalidatePathMock).toHaveBeenCalledWith("/dashboard/tags")
   })
 
   test("renameCategory updates owned category name", async () => {
@@ -232,7 +235,7 @@ describe("manageCategories", () => {
     expect(revalidatePathMock).toHaveBeenCalledWith("/dashboard/tags")
   })
 
-  test("getCategoryDeletePreview returns usage count", async () => {
+  test("getCategoryDeletePreview returns active (non-archived) usage count for owned links", async () => {
     mockSession("user-1")
     enqueueSelect([
       {

@@ -36,12 +36,12 @@ interface CategoryActionsMenuProps {
 
 function usageDescription(count: number): string {
   if (count === 0) {
-    return "This tag is not used on any links."
+    return "This tag is not used on any active links (same as the Usage column on Tags)."
   }
   if (count === 1) {
-    return "This tag is used on 1 link."
+    return "This tag is used on 1 active link (same as the Usage column on Tags)."
   }
-  return `This tag is used on ${count} links.`
+  return `This tag is used on ${count} active links (same as the Usage column on Tags).`
 }
 
 export function CategoryActionsMenu({
@@ -139,7 +139,7 @@ export function CategoryActionsMenu({
         }
         toast.success(
           result.detachedLinks > 0
-            ? `Tag deleted. Removed from ${result.detachedLinks} link${result.detachedLinks === 1 ? "" : "s"}.`
+            ? `Tag deleted. Removed from ${result.detachedLinks} active link${result.detachedLinks === 1 ? "" : "s"}.`
             : "Tag deleted.",
         )
         setDeleteOpen(false)

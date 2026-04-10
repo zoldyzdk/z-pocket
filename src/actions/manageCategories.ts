@@ -1,7 +1,7 @@
 "use server"
 
 import { db } from "@/db"
-import { categories, linkCategories } from "@/db/schema"
+import { categories, linkCategories, links } from "@/db/schema"
 import { normalizeCategoryKey, normalizeCategoryName } from "@/lib/categories"
 import { auth } from "@/lib/auth"
 import { and, eq, ne, sql } from "drizzle-orm"
@@ -169,7 +169,14 @@ export async function getCategoryDeletePreview(input: {
   const [row] = await db
     .select({ count: sql<number>`count(*)` })
     .from(linkCategories)
-    .where(eq(linkCategories.categoryId, input.categoryId))
+    .innerJoin(links, eq(linkCategories.linkId, links.id))
+    .where(
+      and(
+        eq(linkCategories.categoryId, input.categoryId),
+        eq(links.userId, userId),
+        eq(links.isArchived, false),
+      ),
+    )
 
   return { ok: true, usageCount: Number(row?.count ?? 0) }
 }
@@ -189,7 +196,14 @@ export async function deleteCategory(input: { categoryId: string }): Promise<Del
     const [countRow] = await tx
       .select({ count: sql<number>`count(*)` })
       .from(linkCategories)
-      .where(eq(linkCategories.categoryId, input.categoryId))
+      .innerJoin(links, eq(linkCategories.linkId, links.id))
+      .where(
+        and(
+          eq(linkCategories.categoryId, input.categoryId),
+          eq(links.userId, userId),
+          eq(links.isArchived, false),
+        ),
+      )
 
     const detachedLinks = Number(countRow?.count ?? 0)
 

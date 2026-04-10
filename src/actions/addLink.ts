@@ -107,8 +107,8 @@ export const addLink = async (formData: LinkFormData): AddLinkResponse => {
       }
     }
 
-    // Revalidate the dashboard page to show the new link
     revalidatePath("/dashboard")
+    revalidatePath("/dashboard/tags")
 
     return {
       success: true,

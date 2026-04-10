@@ -67,7 +67,7 @@ test("delete flow fetches preview via getCategoryDeletePreview and shows usage c
   await waitFor(() => {
     expect(getCategoryDeletePreview).toHaveBeenCalledWith({ categoryId: "cat-1" })
   })
-  expect(within(dialog).getByText(/This tag is used on 7 links/i)).toBeInTheDocument()
+  expect(within(dialog).getByText(/used on 7 active links/i)).toBeInTheDocument()
   expect(within(dialog).getByText(/cannot be undone/i)).toBeInTheDocument()
 })
 
@@ -90,7 +90,7 @@ test("delete dialog copy for zero and singular usage", async () => {
   vi.mocked(getCategoryDeletePreview).mockResolvedValue({ ok: true, usageCount: 0 })
   let dialog = await openDeleteDialogFromSidebar()
   await waitFor(() => {
-    expect(within(dialog).getByText(/not used on any links/i)).toBeInTheDocument()
+    expect(within(dialog).getByText(/not used on any active links/i)).toBeInTheDocument()
   })
 
   cleanup()
@@ -102,8 +102,8 @@ test("delete dialog copy for zero and singular usage", async () => {
 
   dialog = await openDeleteDialogFromSidebar()
   await waitFor(() => {
-    expect(within(dialog).getByText(/used on 1 link/i)).toBeInTheDocument()
-    expect(within(dialog).queryByText(/1 links/i)).not.toBeInTheDocument()
+    expect(within(dialog).getByText(/used on 1 active link/i)).toBeInTheDocument()
+    expect(within(dialog).queryByText(/1 active links/i)).not.toBeInTheDocument()
   })
 })
 
@@ -137,7 +137,7 @@ describe("TagsManagement", () => {
     await waitFor(() => {
       expect(getCategoryDeletePreview).toHaveBeenCalledWith({ categoryId: "row-cat" })
     })
-    expect(within(dialog).getByText(/used on 3 links/i)).toBeInTheDocument()
+    expect(within(dialog).getByText(/used on 3 active links/i)).toBeInTheDocument()
   })
 
   test("renders tags with usage counts in alphabetical row order", () => {
