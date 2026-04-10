@@ -3,10 +3,11 @@
 import { db } from "@/db"
 import { links, categories, linkCategories } from "@/db/schema"
 import { auth } from "@/lib/auth"
+import { normalizeCategoryKey, normalizeCategoryName } from "@/lib/categories"
 import { nanoid } from "nanoid"
 import { revalidatePath } from "next/cache"
 import { headers } from "next/headers"
-import { eq, and } from "drizzle-orm"
+import { and, eq, sql } from "drizzle-orm"
 
 type AddLinkResponse = Promise<{
   success: boolean
@@ -63,14 +64,21 @@ export const addLink = async (formData: LinkFormData): AddLinkResponse => {
     // Handle categories if provided
     if (formData.categories && formData.categories.length > 0) {
       for (const categoryName of formData.categories) {
-        const normalizedName = categoryName.trim()
+        const normalizedName = normalizeCategoryName(categoryName)
         if (!normalizedName) continue
+
+        const normalizedKey = normalizeCategoryKey(normalizedName)
 
         // Check if category already exists for this user (case-insensitive)
         const existingCategory = await db
           .select()
           .from(categories)
-          .where(and(eq(categories.userId, session.user.id), eq(categories.name, normalizedName)))
+          .where(
+            and(
+              eq(categories.userId, session.user.id),
+              sql`lower(${categories.name}) = ${normalizedKey}`,
+            ),
+          )
           .limit(1)
 
         let categoryId: string
