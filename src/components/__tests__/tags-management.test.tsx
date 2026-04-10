@@ -49,25 +49,97 @@ test("tag actions menu lists Rename and Delete", async () => {
   })
 })
 
-test("delete flow shows usage count from getCategoryDeletePreview", async () => {
-  vi.mocked(getCategoryDeletePreview).mockResolvedValue({ ok: true, usageCount: 7 })
-
+async function openDeleteDialogFromSidebar() {
   renderCategoryRow()
-
   openTagActionsMenu()
   await waitFor(() => {
     expect(screen.getByRole("menuitem", { name: /^delete$/i })).toBeInTheDocument()
   })
-
   fireEvent.click(screen.getByRole("menuitem", { name: /^delete$/i }))
+  return screen.findByRole("dialog")
+}
 
-  const dialog = await screen.findByRole("dialog")
+test("delete flow fetches preview via getCategoryDeletePreview and shows usage count before confirm", async () => {
+  vi.mocked(getCategoryDeletePreview).mockResolvedValue({ ok: true, usageCount: 7 })
+
+  const dialog = await openDeleteDialogFromSidebar()
+
   await waitFor(() => {
-    expect(within(dialog).getByText(/7 links/i)).toBeInTheDocument()
+    expect(getCategoryDeletePreview).toHaveBeenCalledWith({ categoryId: "cat-1" })
+  })
+  expect(within(dialog).getByText(/This tag is used on 7 links/i)).toBeInTheDocument()
+  expect(within(dialog).getByText(/cannot be undone/i)).toBeInTheDocument()
+})
+
+test("delete confirm calls deleteCategory with category id", async () => {
+  vi.mocked(getCategoryDeletePreview).mockResolvedValue({ ok: true, usageCount: 2 })
+
+  const dialog = await openDeleteDialogFromSidebar()
+  await waitFor(() => {
+    expect(within(dialog).getByRole("button", { name: /^delete tag$/i })).not.toBeDisabled()
+  })
+
+  fireEvent.click(within(dialog).getByRole("button", { name: /^delete tag$/i }))
+
+  await waitFor(() => {
+    expect(deleteCategory).toHaveBeenCalledWith({ categoryId: "cat-1" })
   })
 })
 
+test("delete dialog copy for zero and singular usage", async () => {
+  vi.mocked(getCategoryDeletePreview).mockResolvedValue({ ok: true, usageCount: 0 })
+  let dialog = await openDeleteDialogFromSidebar()
+  await waitFor(() => {
+    expect(within(dialog).getByText(/not used on any links/i)).toBeInTheDocument()
+  })
+
+  cleanup()
+  vi.clearAllMocks()
+  vi.mocked(renameCategory).mockResolvedValue({ ok: true })
+  vi.mocked(deleteCategory).mockResolvedValue({ ok: true, detachedLinks: 0 })
+  vi.mocked(getCategoryDeletePreview).mockResolvedValue({ ok: true, usageCount: 1 })
+  vi.mocked(createCategory).mockResolvedValue({ ok: true })
+
+  dialog = await openDeleteDialogFromSidebar()
+  await waitFor(() => {
+    expect(within(dialog).getByText(/used on 1 link/i)).toBeInTheDocument()
+    expect(within(dialog).queryByText(/1 links/i)).not.toBeInTheDocument()
+  })
+})
+
+test("delete confirm stays disabled when preview fails", async () => {
+  vi.mocked(getCategoryDeletePreview).mockResolvedValue({ ok: false, error: "Tag not found." })
+
+  const dialog = await openDeleteDialogFromSidebar()
+  await waitFor(() => {
+    expect(within(dialog).getByText(/tag not found/i)).toBeInTheDocument()
+  })
+  expect(within(dialog).getByRole("button", { name: /^delete tag$/i })).toBeDisabled()
+  expect(deleteCategory).not.toHaveBeenCalled()
+})
+
 describe("TagsManagement", () => {
+  test("inline actions delete flow uses getCategoryDeletePreview for that row id", async () => {
+    vi.mocked(getCategoryDeletePreview).mockResolvedValue({ ok: true, usageCount: 3 })
+
+    render(
+      <TagsManagement initialCategories={[{ id: "row-cat", name: "Gamma", usageCount: 3 }]} />,
+    )
+
+    const trigger = screen.getByRole("button", { name: /actions for tag gamma/i })
+    fireEvent.pointerDown(trigger, { button: 0, ctrlKey: false })
+    await waitFor(() => {
+      expect(screen.getByRole("menuitem", { name: /^delete$/i })).toBeInTheDocument()
+    })
+    fireEvent.click(screen.getByRole("menuitem", { name: /^delete$/i }))
+
+    const dialog = await screen.findByRole("dialog")
+    await waitFor(() => {
+      expect(getCategoryDeletePreview).toHaveBeenCalledWith({ categoryId: "row-cat" })
+    })
+    expect(within(dialog).getByText(/used on 3 links/i)).toBeInTheDocument()
+  })
+
   test("renders tags with usage counts in alphabetical row order", () => {
     render(
       <TagsManagement
