@@ -26,14 +26,14 @@ const items = [
     icon: Home,
   },
   {
-    title: "Archived",
-    url: "/dashboard/archived",
-    icon: Archive,
-  },
-  {
     title: "Tags",
     url: "/dashboard/tags",
     icon: Tags,
+  },
+  {
+    title: "Archived",
+    url: "/dashboard/archived",
+    icon: Archive,
   },
 ]
 
