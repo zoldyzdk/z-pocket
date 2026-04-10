@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test, vi } from "vitest"
-import { asc } from "drizzle-orm"
-import { categories } from "@/db/schema"
+import { and, asc, eq } from "drizzle-orm"
+import { categories, linkCategories, links } from "@/db/schema"
 
 const selectMock = vi.fn()
 
@@ -34,19 +34,35 @@ describe("getUserCategoriesWithUsage", () => {
     selectMock.mockReset()
   })
 
-  test("orders by category name ascending", async () => {
-    mockQueryChain([
-      { id: "b", name: "Beta", usageCount: 1 },
-      { id: "a", name: "Alpha", usageCount: 2 },
-    ])
+  test("configures joins, category scope, link user + non-archived filters, groupBy, and orderBy(asc name)", async () => {
+    const userId = "user-1"
+    mockQueryChain([{ id: "b", name: "Beta", usageCount: 1 }])
 
-    await getUserCategoriesWithUsage("user-1")
+    await getUserCategoriesWithUsage(userId)
 
     const builder = selectMock.mock.results[0]?.value as ReturnType<typeof mockQueryChain>
+
+    expect(builder.from).toHaveBeenCalledWith(categories)
+    expect(builder.leftJoin).toHaveBeenNthCalledWith(
+      1,
+      linkCategories,
+      eq(categories.id, linkCategories.categoryId),
+    )
+    expect(builder.leftJoin).toHaveBeenNthCalledWith(
+      2,
+      links,
+      and(
+        eq(linkCategories.linkId, links.id),
+        eq(links.userId, userId),
+        eq(links.isArchived, false),
+      ),
+    )
+    expect(builder.where).toHaveBeenCalledWith(eq(categories.userId, userId))
+    expect(builder.groupBy).toHaveBeenCalledWith(categories.id, categories.name)
     expect(builder.orderBy).toHaveBeenCalledWith(asc(categories.name))
   })
 
-  test("normalizes usageCount to a number", async () => {
+  test("normalizes string usageCount to a number", async () => {
     mockQueryChain([{ id: "c1", name: "Solo", usageCount: "3" as unknown as number }])
 
     const rows = await getUserCategoriesWithUsage("user-1")
@@ -54,5 +70,17 @@ describe("getUserCategoriesWithUsage", () => {
     expect(rows).toHaveLength(1)
     expect(rows[0].usageCount).toBe(3)
     expect(typeof rows[0].usageCount).toBe("number")
+  })
+
+  test.each([
+    { label: "null", usageCount: null as unknown as number },
+    { label: "undefined", usageCount: undefined as unknown as number },
+    { label: "numeric zero", usageCount: 0 },
+  ])("normalizes $label usageCount to 0", async ({ usageCount }) => {
+    mockQueryChain([{ id: "c1", name: "Empty", usageCount }])
+
+    const rows = await getUserCategoriesWithUsage("user-1")
+
+    expect(rows[0].usageCount).toBe(0)
   })
 })
