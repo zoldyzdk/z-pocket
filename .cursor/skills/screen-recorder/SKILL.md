@@ -1,6 +1,6 @@
 ---
 name: screen-recorder
-description: Record browser screen videos of user-specified flows using Playwright. Use this when the user asks to record a video, screen capture, or visual evidence of a browser interaction flow.
+description: Records browser screen videos of user-specified flows using Playwright. Use when the user asks to record a video, screen capture, or visual evidence of a browser interaction flow, or mentions gravar, record, video, screen capture, or evidência visual.
 ---
 
 ## When to Use
@@ -93,7 +93,7 @@ Tell the user:
 - **Use `waitForURL` or `waitForSelector`** after navigation — don't rely on fixed timeouts
 - **Handle cookie consent dialogs** — many pages show these on first visit
 - **Take screenshot on failure** — helps debug without re-watching the whole video
-- **Use `try/finally` with `context.close()`** — ensures the video is saved even on failure (video is finalized when context closes)
+- **Use `try/finally` with `context.close()`** — ensures the video is finalized when context closes
 
 ## Prerequisites
 
