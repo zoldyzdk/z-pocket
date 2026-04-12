@@ -19,6 +19,7 @@ export async function deleteLinks(linkId: string) {
 
     await db.delete(links).where(eq(links.id, linkId))
     revalidatePath("/dashboard")
+    revalidatePath("/dashboard/tags")
     return {
       error: false,
       message: "Link deleted successfully!",

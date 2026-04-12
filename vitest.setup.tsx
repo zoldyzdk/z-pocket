@@ -1,6 +1,34 @@
 import { vi } from 'vitest'
 import '@testing-library/jest-dom/vitest'
 
+Object.defineProperty(window, 'matchMedia', {
+    writable: true,
+    value: vi.fn().mockImplementation((query: string) => ({
+        matches: false,
+        media: query,
+        onchange: null,
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+    })),
+})
+
+// Radix dropdowns rely on pointer capture (missing in jsdom)
+Object.defineProperty(Element.prototype, 'hasPointerCapture', {
+    value: () => false,
+    configurable: true,
+})
+Object.defineProperty(Element.prototype, 'setPointerCapture', {
+    value: vi.fn(),
+    configurable: true,
+})
+Object.defineProperty(Element.prototype, 'releasePointerCapture', {
+    value: vi.fn(),
+    configurable: true,
+})
+
 // Set up environment variables for testing
 process.env.TURSO_CONNECTION_URL = process.env.TURSO_CONNECTION_URL || 'http://localhost:8080'
 process.env.TURSO_AUTH_TOKEN = process.env.TURSO_AUTH_TOKEN || 'test-token'
@@ -31,6 +59,7 @@ vi.mock('next/navigation', () => ({
         replace: vi.fn(),
         prefetch: vi.fn(),
         back: vi.fn(),
+        refresh: vi.fn(),
     }),
     usePathname: () => '/',
     useSearchParams: () => new URLSearchParams(),
@@ -51,5 +80,20 @@ vi.mock('@/actions/fetchMetadata', () => ({
 
 vi.mock('@/actions/getCategories', () => ({
     getCategories: vi.fn(),
+}))
+
+vi.mock('@/actions/manageCategories', () => ({
+    renameCategory: vi.fn(),
+    deleteCategory: vi.fn(),
+    getCategoryDeletePreview: vi.fn(),
+    createCategory: vi.fn(),
+}))
+
+vi.mock('@/actions/archiveLink', () => ({
+    archiveLink: vi.fn(),
+}))
+
+vi.mock('@/actions/deleteLinks', () => ({
+    deleteLinks: vi.fn(),
 }))
 

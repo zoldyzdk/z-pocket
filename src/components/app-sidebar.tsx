@@ -1,5 +1,4 @@
 import { auth } from "@/lib/auth"
-import { Archive, Home } from "lucide-react"
 import { headers } from "next/headers"
 
 import {
@@ -7,30 +6,12 @@ import {
   SidebarContent,
   SidebarGroup,
   SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarHeader,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import { getCategoriesWithLinks } from "@/lib/queries"
-import Link from "next/link"
-import { ShimmeringText } from "./ui/shimmering-text"
 import { CategoriesSection } from "./categories-section"
-
-// Menu items.
-const items = [
-  {
-    title: "Home",
-    url: "/dashboard",
-    icon: Home,
-  },
-  {
-    title: "Archived",
-    url: "/dashboard/archived",
-    icon: Archive,
-  }
-]
+import { DashboardSidebarMainNav } from "./dashboard-sidebar-main-nav"
+import { ShimmeringText } from "./ui/shimmering-text"
 
 export async function AppSidebar() {
   const headersList = await headers();
@@ -55,18 +36,7 @@ export async function AppSidebar() {
             />
           </SidebarHeader>
           <SidebarGroupContent>
-            <SidebarMenu>
-              {items.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <Link href={item.url}>
-                      <item.icon />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
+            <DashboardSidebarMainNav />
           </SidebarGroupContent>
         </SidebarGroup>
         <CategoriesSection categories={categories} />

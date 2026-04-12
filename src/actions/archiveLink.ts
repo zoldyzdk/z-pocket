@@ -25,6 +25,7 @@ export async function archiveLink(linkId: string) {
       })
       .where(eq(links.id, linkId))
     revalidatePath("/dashboard")
+    revalidatePath("/dashboard/tags")
     return {
       error: false,
       message: "Link archived successfully!",

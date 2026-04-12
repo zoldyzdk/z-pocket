@@ -1,18 +1,21 @@
 "use client"
 
-import { useRouter, useSearchParams } from "next/navigation"
+import { useRouter, useSearchParams, usePathname } from "next/navigation"
+import { CategoryActionsMenu } from "@/components/category-actions-menu"
 import { SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar"
 import { cn } from "@/lib/utils"
 
 interface CategoryMenuItemProps {
-  categoryName: string
+  category: { id: string; name: string }
 }
 
-export function CategoryMenuItem({ categoryName }: CategoryMenuItemProps) {
+export function CategoryMenuItem({ category }: CategoryMenuItemProps) {
   const router = useRouter()
+  const pathname = usePathname()
   const searchParams = useSearchParams()
   const currentCategory = searchParams.get("category")
-  const isActive = currentCategory === categoryName
+  const isActive =
+    pathname === "/dashboard" && currentCategory === category.name
 
   const handleClick = () => {
     const params = new URLSearchParams(searchParams)
@@ -22,7 +25,7 @@ export function CategoryMenuItem({ categoryName }: CategoryMenuItemProps) {
       params.delete("category")
     } else {
       // Set the category filter
-      params.set("category", categoryName)
+      params.set("category", category.name)
     }
 
     const newUrl = params.toString() ? `?${params.toString()}` : ""
@@ -35,11 +38,12 @@ export function CategoryMenuItem({ categoryName }: CategoryMenuItemProps) {
         onClick={handleClick}
         className={cn(
           "w-full justify-start cursor-pointer",
-          isActive && "bg-accent font-medium"
+          isActive && "bg-accent font-medium",
         )}
       >
-        <span>{categoryName}</span>
+        <span>{category.name}</span>
       </SidebarMenuButton>
+      <CategoryActionsMenu categoryId={category.id} categoryName={category.name} />
     </SidebarMenuItem>
   )
 }
