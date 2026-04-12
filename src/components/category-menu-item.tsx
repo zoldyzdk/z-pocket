@@ -1,6 +1,6 @@
 "use client"
 
-import { useRouter, useSearchParams } from "next/navigation"
+import { useRouter, useSearchParams, usePathname } from "next/navigation"
 import { CategoryActionsMenu } from "@/components/category-actions-menu"
 import { SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar"
 import { cn } from "@/lib/utils"
@@ -11,9 +11,11 @@ interface CategoryMenuItemProps {
 
 export function CategoryMenuItem({ category }: CategoryMenuItemProps) {
   const router = useRouter()
+  const pathname = usePathname()
   const searchParams = useSearchParams()
   const currentCategory = searchParams.get("category")
-  const isActive = currentCategory === category.name
+  const isActive =
+    pathname === "/dashboard" && currentCategory === category.name
 
   const handleClick = () => {
     const params = new URLSearchParams(searchParams)

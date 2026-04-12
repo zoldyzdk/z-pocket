@@ -1,14 +1,15 @@
 "use client"
 
-import { useRouter, useSearchParams } from "next/navigation"
+import { useRouter, useSearchParams, usePathname } from "next/navigation"
 import { SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar"
 import { cn } from "@/lib/utils"
 
 export function AllCategoriesMenuItem() {
     const router = useRouter()
+    const pathname = usePathname()
     const searchParams = useSearchParams()
     const currentCategory = searchParams.get("category")
-    const isActive = !currentCategory
+    const isActive = pathname === "/dashboard" && !currentCategory
 
     const handleClick = () => {
         const params = new URLSearchParams(searchParams)
