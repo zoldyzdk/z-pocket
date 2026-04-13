@@ -11,11 +11,8 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command"
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { normalizeCategoryName } from "@/lib/categories"
 import { cn } from "@/lib/utils"
 import { X } from "lucide-react"
 import { useEffect, useState, KeyboardEvent } from "react"
@@ -72,14 +69,13 @@ export function TagInput({
   const useDialog = useTagInputDialogMode()
 
   const addTag = (tag: string) => {
-    const normalizedTag = tag.trim()
-    const normalizedTagLower = normalizedTag.toLowerCase()
+    const canonical = normalizeCategoryName(tag)
     const hasSelectedMatch = value.some(
-      (selectedTag) => selectedTag.toLowerCase() === normalizedTagLower
+      (selectedTag) => normalizeCategoryName(selectedTag) === canonical
     )
 
-    if (normalizedTag && !hasSelectedMatch) {
-      onChange([...value, normalizedTag])
+    if (canonical && !hasSelectedMatch) {
+      onChange([...value, canonical])
     }
     setInputValue("")
     setOpen(false)
@@ -99,35 +95,29 @@ export function TagInput({
     }
   }
 
-  const normalizedInput = inputValue.trim()
-  const normalizedInputLower = normalizedInput.toLowerCase()
-  const selectedTagLookup = new Set(value.map((tag) => tag.toLowerCase()))
+  const canonicalInput = normalizeCategoryName(inputValue)
+  const selectedTagLookup = new Set(value.map((tag) => normalizeCategoryName(tag)))
   const filteredSuggestions: string[] = []
   let hasExactSuggestionMatch = false
 
   for (const suggestion of suggestions) {
-    const normalizedSuggestion = suggestion.toLowerCase()
+    const normalizedSuggestion = normalizeCategoryName(suggestion)
 
     if (selectedTagLookup.has(normalizedSuggestion)) {
       continue
     }
 
-    if (normalizedSuggestion === normalizedInputLower) {
+    if (normalizedSuggestion === canonicalInput) {
       hasExactSuggestionMatch = true
     }
 
-    if (
-      normalizedInputLower === "" ||
-      normalizedSuggestion.includes(normalizedInputLower)
-    ) {
+    if (canonicalInput === "" || normalizedSuggestion.includes(canonicalInput)) {
       filteredSuggestions.push(suggestion)
     }
   }
 
   const showCreateOption =
-    normalizedInput.length > 0 &&
-    !selectedTagLookup.has(normalizedInputLower) &&
-    !hasExactSuggestionMatch
+    canonicalInput.length > 0 && !selectedTagLookup.has(canonicalInput) && !hasExactSuggestionMatch
 
   const commandContent = (
     <>
@@ -138,22 +128,16 @@ export function TagInput({
         onKeyDown={handleKeyDown}
       />
       <CommandList className="max-h-60 overflow-y-auto">
-        {filteredSuggestions.length === 0 && normalizedInput.length === 0 && (
+        {filteredSuggestions.length === 0 && canonicalInput.length === 0 && (
           <CommandEmpty>No categories yet.</CommandEmpty>
         )}
-        {filteredSuggestions.length === 0 && normalizedInput.length > 0 && (
-          <CommandEmpty>
-            Press Enter to create &quot;{inputValue}&quot;
-          </CommandEmpty>
+        {filteredSuggestions.length === 0 && canonicalInput.length > 0 && (
+          <CommandEmpty>Press Enter to create &quot;{canonicalInput}&quot;</CommandEmpty>
         )}
         {filteredSuggestions.length > 0 && (
           <CommandGroup>
             {filteredSuggestions.map((suggestion) => (
-              <CommandItem
-                key={suggestion}
-                value={suggestion}
-                onSelect={() => addTag(suggestion)}
-              >
+              <CommandItem key={suggestion} value={suggestion} onSelect={() => addTag(suggestion)}>
                 {suggestion}
               </CommandItem>
             ))}
@@ -162,11 +146,11 @@ export function TagInput({
         {showCreateOption ? (
           <CommandGroup>
             <CommandItem
-              value={normalizedInput}
-              onSelect={() => addTag(normalizedInput)}
+              value={canonicalInput}
+              onSelect={() => addTag(inputValue)}
               className="text-foreground"
             >
-              Create &quot;{normalizedInput}&quot;
+              Create &quot;{canonicalInput}&quot;
             </CommandItem>
           </CommandGroup>
         ) : null}
@@ -227,11 +211,7 @@ export function TagInput({
               {placeholder}
             </Button>
           </PopoverTrigger>
-          <PopoverContent
-            className="w-full p-0"
-            align="start"
-            onWheel={(e) => e.stopPropagation()}
-          >
+          <PopoverContent className="w-full p-0" align="start" onWheel={(e) => e.stopPropagation()}>
             <Command shouldFilter={false}>{commandContent}</Command>
           </PopoverContent>
         </Popover>
@@ -239,4 +219,3 @@ export function TagInput({
     </div>
   )
 }
-
