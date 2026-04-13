@@ -166,6 +166,24 @@ describe("addLink category matching", () => {
     expect(revalidatePathMock).toHaveBeenCalledWith("/dashboard")
     expect(revalidatePathMock).toHaveBeenCalledWith("/dashboard/tags")
   })
+
+  test("creates new category with lowercase name when input has mixed case", async () => {
+    mockSession("user-1")
+    enqueueSelect([])
+
+    const result = await addLink({
+      url: "https://new.example.com",
+      categories: ["RuSt"],
+    })
+    expect(result.success).toBe(true)
+
+    const categoryInserts = insertValuesMock.mock.calls.map((c) => c[0]).filter(isCategoryInsert)
+    expect(categoryInserts).toContainEqual(
+      expect.objectContaining({
+        name: "rust",
+      }),
+    )
+  })
 })
 
 describe("updateLink category matching", () => {
