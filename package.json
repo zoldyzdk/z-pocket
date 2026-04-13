@@ -11,7 +11,8 @@
     "format:check": "prettier --check .",
     "test": "vitest",
     "db:generate": "bunx --bun drizzle-kit generate",
-    "db:migrate": "bunx  --bun drizzle-kit migrate"
+    "db:migrate": "bunx  --bun drizzle-kit migrate",
+    "db:normalize-tags": "bun scripts/normalize-category-names.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.1.1",
