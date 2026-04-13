@@ -23,8 +23,14 @@ import {
 import { Input } from "@/components/ui/input"
 import { SidebarMenuAction } from "@/components/ui/sidebar"
 import { Loader2, MoreHorizontal } from "lucide-react"
-import { useRouter, useSearchParams } from "next/navigation"
-import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
+import {
+  type ComponentPropsWithoutRef,
+  forwardRef,
+  useCallback,
+  useEffect,
+  useState,
+} from "react"
 import { toast } from "sonner"
 
 interface CategoryActionsMenuProps {
@@ -35,22 +41,85 @@ interface CategoryActionsMenuProps {
 }
 
 function usageDescription(count: number): string {
+  const base =
+    "Deleting removes this tag from all links, including archived ones."
+  const usageSuffix = " (same count as the Usage column on Tags)."
   if (count === 0) {
-    return "Deleting removes this tag from all links, including archived ones. It is not used on any active links right now (same count as the Usage column on Tags)."
+    return `${base} It is not used on any active links right now${usageSuffix}`
   }
   if (count === 1) {
-    return "Deleting removes this tag from all links, including archived ones. It is used on 1 active link (same count as the Usage column on Tags)."
+    return `${base} It is used on 1 active link${usageSuffix}`
   }
-  return `Deleting removes this tag from all links, including archived ones. It is used on ${count} active links (same count as the Usage column on Tags).`
+  return `${base} It is used on ${count} active links${usageSuffix}`
 }
 
-export function CategoryActionsMenu({
-  categoryId,
-  categoryName,
-  triggerVariant = "sidebar",
-}: CategoryActionsMenuProps) {
+const categoryMenuTriggerIcon = (
+  <>
+    <MoreHorizontal className="size-4" />
+    <span className="sr-only">Open tag actions</span>
+  </>
+)
+
+const CategoryMenuTrigger = forwardRef<
+  HTMLButtonElement,
+  { variant: "sidebar" | "inline"; categoryName: string } & ComponentPropsWithoutRef<"button">
+>(function CategoryMenuTrigger({ variant, categoryName, ...rest }, ref) {
+  const label = `Actions for tag ${categoryName}`
+  if (variant === "sidebar") {
+    return (
+      <SidebarMenuAction
+        ref={ref}
+        className="data-[state=open]:bg-sidebar-accent"
+        aria-label={label}
+        {...rest}
+      >
+        {categoryMenuTriggerIcon}
+      </SidebarMenuAction>
+    )
+  }
+  return (
+    <Button
+      ref={ref}
+      type="button"
+      variant="ghost"
+      size="icon"
+      className="size-8 shrink-0"
+      aria-label={label}
+      {...rest}
+    >
+      {categoryMenuTriggerIcon}
+    </Button>
+  )
+})
+CategoryMenuTrigger.displayName = "CategoryMenuTrigger"
+
+function DeleteTagDialogDescription({
+  previewError,
+  usageCount,
+}: {
+  previewError: string | null
+  usageCount: number | null
+}) {
+  if (previewError) {
+    return previewError
+  }
+  if (usageCount === null) {
+    return (
+      <span className="inline-flex items-center gap-2">
+        <Loader2 className="size-4 animate-spin shrink-0" />
+        Loading usage…
+      </span>
+    )
+  }
+  return (
+    <>
+      {usageDescription(usageCount)} This cannot be undone.
+    </>
+  )
+}
+
+function useCategoryActions(categoryId: string, categoryName: string) {
   const router = useRouter()
-  const searchParams = useSearchParams()
   const [renameOpen, setRenameOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [renameValue, setRenameValue] = useState(categoryName)
@@ -60,9 +129,8 @@ export function CategoryActionsMenu({
   const [isDeleting, setIsDeleting] = useState(false)
 
   useEffect(() => {
-    if (renameOpen) {
-      setRenameValue(categoryName)
-    }
+    if (!renameOpen) return
+    setRenameValue(categoryName)
   }, [renameOpen, categoryName])
 
   useEffect(() => {
@@ -89,7 +157,9 @@ export function CategoryActionsMenu({
   }, [deleteOpen, categoryId])
 
   const syncUrlAfterCategoryNameChange = (nextName: string | null) => {
-    const params = new URLSearchParams(searchParams.toString())
+    const params = new URLSearchParams(
+      typeof window !== "undefined" ? window.location.search : "",
+    )
     if (params.get("category") !== categoryName) {
       return
     }
@@ -151,37 +221,66 @@ export function CategoryActionsMenu({
     })()
   }
 
+  const deleteConfirmDisabled =
+    isDeleting || previewError !== null || usageCount === null
+
+  const openRename = useCallback(() => {
+    setRenameValue(categoryName)
+    setRenameOpen(true)
+  }, [categoryName])
+
+  return {
+    renameOpen,
+    setRenameOpen,
+    deleteOpen,
+    setDeleteOpen,
+    renameValue,
+    setRenameValue,
+    usageCount,
+    previewError,
+    isRenaming,
+    isDeleting,
+    deleteConfirmDisabled,
+    handleRename,
+    handleDelete,
+    openRename,
+  }
+}
+
+export function CategoryActionsMenu({
+  categoryId,
+  categoryName,
+  triggerVariant = "sidebar",
+}: CategoryActionsMenuProps) {
+  const {
+    renameOpen,
+    setRenameOpen,
+    deleteOpen,
+    setDeleteOpen,
+    renameValue,
+    setRenameValue,
+    usageCount,
+    previewError,
+    isRenaming,
+    isDeleting,
+    deleteConfirmDisabled,
+    handleRename,
+    handleDelete,
+    openRename,
+  } = useCategoryActions(categoryId, categoryName)
+
   return (
     <>
       <DropdownMenu modal={false}>
         <DropdownMenuTrigger asChild>
-          {triggerVariant === "sidebar" ? (
-            <SidebarMenuAction
-              className="data-[state=open]:bg-sidebar-accent"
-              aria-label={`Actions for tag ${categoryName}`}
-            >
-              <MoreHorizontal className="size-4" />
-              <span className="sr-only">Open tag actions</span>
-            </SidebarMenuAction>
-          ) : (
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="size-8 shrink-0"
-              aria-label={`Actions for tag ${categoryName}`}
-            >
-              <MoreHorizontal className="size-4" />
-              <span className="sr-only">Open tag actions</span>
-            </Button>
-          )}
+          <CategoryMenuTrigger variant={triggerVariant} categoryName={categoryName} />
         </DropdownMenuTrigger>
         <DropdownMenuContent
           side={triggerVariant === "sidebar" ? "right" : "bottom"}
           align="end"
           className="w-40"
         >
-          <DropdownMenuItem onSelect={() => setRenameOpen(true)}>Rename</DropdownMenuItem>
+          <DropdownMenuItem onSelect={openRename}>Rename</DropdownMenuItem>
           <DropdownMenuItem
             onSelect={() => setDeleteOpen(true)}
             className="text-destructive focus:text-destructive"
@@ -225,18 +324,10 @@ export function CategoryActionsMenu({
           <DialogHeader>
             <DialogTitle>Delete tag</DialogTitle>
             <DialogDescription>
-              {previewError ? (
-                previewError
-              ) : usageCount === null ? (
-                <span className="inline-flex items-center gap-2">
-                  <Loader2 className="size-4 animate-spin shrink-0" />
-                  Loading usage…
-                </span>
-              ) : (
-                <>
-                  {usageDescription(usageCount)} This cannot be undone.
-                </>
-              )}
+              <DeleteTagDialogDescription
+                previewError={previewError}
+                usageCount={usageCount}
+              />
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -247,7 +338,7 @@ export function CategoryActionsMenu({
               type="button"
               variant="destructive"
               onClick={handleDelete}
-              disabled={isDeleting || previewError !== null || usageCount === null}
+              disabled={deleteConfirmDisabled}
             >
               {isDeleting ? <Loader2 className="size-4 animate-spin" /> : "Delete tag"}
             </Button>
