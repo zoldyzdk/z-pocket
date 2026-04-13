@@ -176,6 +176,11 @@ describe("manageCategories", () => {
     expect(transactionMock).toHaveBeenCalledTimes(1)
     expect(insertMock).toHaveBeenCalled()
     expect(insertValuesMock).toHaveBeenCalled()
+    expect(insertValuesMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: "fresh",
+      }),
+    )
     expect(revalidatePathMock).toHaveBeenCalledWith("/dashboard")
     expect(revalidatePathMock).toHaveBeenCalledWith("/dashboard/tags")
   })
@@ -201,7 +206,7 @@ describe("manageCategories", () => {
     expect(transactionMock).toHaveBeenCalledTimes(1)
     expect(updateMock).toHaveBeenCalled()
     expect(updateSetMock).toHaveBeenCalledWith(
-      expect.objectContaining({ name: "TypeScript" }),
+      expect.objectContaining({ name: "typescript" }),
     )
     expect(updateWhereMock).toHaveBeenCalled()
     expect(revalidatePathMock).toHaveBeenCalledWith("/dashboard")
