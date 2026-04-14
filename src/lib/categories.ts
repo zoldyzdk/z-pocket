@@ -1,7 +1,7 @@
 export function normalizeCategoryName(input: string): string {
-  return input.trim()
+  return input.trim().toLowerCase()
 }
 
 export function normalizeCategoryKey(input: string): string {
-  return normalizeCategoryName(input).toLowerCase()
+  return normalizeCategoryName(input)
 }

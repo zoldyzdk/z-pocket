@@ -1,12 +1,12 @@
 import { expect, test } from "vitest"
 import { normalizeCategoryKey, normalizeCategoryName } from "@/lib/categories"
 
-test("normalizeCategoryName trims display name", () => {
-  expect(normalizeCategoryName("  Books  ")).toBe("Books")
+test("normalizeCategoryName trims and lowercases", () => {
+  expect(normalizeCategoryName("  Books  ")).toBe("books")
 })
 
-test("normalizeCategoryKey is case-insensitive for the same logical name", () => {
-  expect(normalizeCategoryKey("My Tag")).toBe(normalizeCategoryKey("my tag"))
+test("normalizeCategoryKey matches normalizeCategoryName for non-empty input", () => {
+  expect(normalizeCategoryKey("  My Tag  ")).toBe("my tag")
 })
 
 test("normalizeCategoryKey is empty for whitespace-only names", () => {
