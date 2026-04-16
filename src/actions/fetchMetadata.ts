@@ -1,5 +1,16 @@
 "use server"
 
+import {
+  BROWSER_LIKE_FETCH_HEADERS,
+  extractTwitterOEmbedPartial,
+  mapFxTwitterApiToPartial,
+  mergeFillEmpty,
+  isGoodEnoughTweetHtmlMetadata,
+  parseLinkMetadataFromHtml,
+  parseTweetUrl,
+  type ParsedTweetUrl,
+} from "@/lib/linkMetadata"
+
 type MetadataResponse = {
   title?: string
   description?: string
@@ -98,23 +109,130 @@ async function fetchYouTubeMetadata(videoId: string): Promise<MetadataResponse |
   }
 }
 
+function resolveTweetEmbedHelperOrigin(): string | null {
+  const raw = process.env.TWITTER_EMBED_METADATA_BASE_URL?.trim()
+  if (!raw) {
+    return null
+  }
+  try {
+    const u = new URL(raw)
+    if (u.protocol !== "https:") {
+      return null
+    }
+    if (u.pathname !== "/" && u.pathname !== "") {
+      return null
+    }
+    return u.origin
+  } catch {
+    return null
+  }
+}
+
+/**
+ * X/Twitter status: HTML (browser-like UA) → publish oEmbed → optional FixTweet-style JSON API.
+ * TWITTER_EMBED_METADATA_BASE_URL — optional HTTPS origin only (e.g. https://api.fxtwitter.com).
+ * When set, GET {origin}/status/{tweetId} for JSON. Off by default.
+ */
+async function fetchTweetMetadata(tweet: ParsedTweetUrl): Promise<MetadataResponse> {
+  let partial: MetadataResponse = {}
+
+  try {
+    const htmlController = new AbortController()
+    const htmlTimeout = setTimeout(() => htmlController.abort(), 10_000)
+    try {
+      const pageRes = await fetch(tweet.canonicalPageUrl, {
+        signal: htmlController.signal,
+        headers: BROWSER_LIKE_FETCH_HEADERS,
+      })
+
+      if (pageRes.ok) {
+        const html = await pageRes.text()
+        partial = parseLinkMetadataFromHtml(html, tweet.canonicalPageUrl)
+        if (isGoodEnoughTweetHtmlMetadata(partial)) {
+          return partial
+        }
+      }
+    } finally {
+      clearTimeout(htmlTimeout)
+    }
+  } catch (e) {
+    console.error("Twitter HTML metadata fetch failed:", e)
+  }
+
+  try {
+    const oembedController = new AbortController()
+    const oembedTimeout = setTimeout(() => oembedController.abort(), 10_000)
+    try {
+      const oembedUrl = new URL("https://publish.twitter.com/oembed")
+      oembedUrl.searchParams.set("url", tweet.canonicalPageUrl)
+      oembedUrl.searchParams.set("omit_script", "true")
+      const oembedRes = await fetch(oembedUrl.toString(), {
+        signal: oembedController.signal,
+        headers: {
+          Accept: "application/json",
+          "User-Agent": BROWSER_LIKE_FETCH_HEADERS["User-Agent"],
+        },
+      })
+
+      if (oembedRes.ok) {
+        const json: unknown = await oembedRes.json()
+        partial = mergeFillEmpty(partial, extractTwitterOEmbedPartial(json))
+      }
+    } finally {
+      clearTimeout(oembedTimeout)
+    }
+  } catch (e) {
+    console.error("Twitter oEmbed failed:", e)
+  }
+
+  const helperOrigin = resolveTweetEmbedHelperOrigin()
+  if (!partial.imageUrl && helperOrigin) {
+    try {
+      const fxController = new AbortController()
+      const fxTimeout = setTimeout(() => fxController.abort(), 10_000)
+      try {
+        const fxUrl = `${helperOrigin}/status/${tweet.statusId}`
+        const fxRes = await fetch(fxUrl, {
+          signal: fxController.signal,
+          headers: {
+            Accept: "application/json",
+            "User-Agent": BROWSER_LIKE_FETCH_HEADERS["User-Agent"],
+          },
+        })
+
+        if (fxRes.ok) {
+          const fxJson: unknown = await fxRes.json()
+          partial = mergeFillEmpty(partial, mapFxTwitterApiToPartial(fxJson))
+        }
+      } finally {
+        clearTimeout(fxTimeout)
+      }
+    } catch (e) {
+      console.error("Twitter embed helper failed:", e)
+    }
+  }
+
+  if (partial.title || partial.description || partial.imageUrl) {
+    return partial
+  }
+
+  return { error: "Failed to fetch metadata" }
+}
+
 /**
  * Server function to fetch metadata from a URL.
- * YouTube links use the oEmbed API; other URLs use Open Graph / HTML tags.
+ * YouTube links use the oEmbed API; X/Twitter status URLs use HTML + oEmbed (+ optional helper); other URLs use Open Graph / HTML tags.
  * @param url - The URL to fetch metadata from
  * @returns Promise with metadata or error
  */
 export const fetchMetadata = async (url: string): Promise<MetadataResponse> => {
   try {
-    // Validate URL
     if (!url || typeof url !== "string") {
       return { error: "Invalid URL provided" }
     }
 
-    // Ensure URL has protocol
     const urlWithProtocol = url.startsWith("http") ? url : `https://${url}`
 
-    // Validate URL format
     try {
       new URL(urlWithProtocol)
     } catch {
@@ -129,9 +247,13 @@ export const fetchMetadata = async (url: string): Promise<MetadataResponse> => {
       }
     }
 
-    // Fetch the HTML content with timeout
+    const tweet = parseTweetUrl(urlWithProtocol)
+    if (tweet) {
+      return await fetchTweetMetadata(tweet)
+    }
+
     const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 second timeout
+    const timeoutId = setTimeout(() => controller.abort(), 10000)
 
     const response = await fetch(urlWithProtocol, {
       signal: controller.signal,
@@ -148,11 +270,7 @@ export const fetchMetadata = async (url: string): Promise<MetadataResponse> => {
     }
 
     const html = await response.text()
-
-    // Parse metadata from HTML
-    const metadata = parseMetadata(html, urlWithProtocol)
-
-    return metadata
+    return parseLinkMetadataFromHtml(html, urlWithProtocol)
   } catch (error) {
     console.error("Error fetching metadata:", error)
 
@@ -165,101 +283,4 @@ export const fetchMetadata = async (url: string): Promise<MetadataResponse> => {
 
     return { error: "Failed to fetch metadata" }
   }
-}
-
-/**
- * Decode HTML entities to their text equivalents
- */
-function decodeHtmlEntities(text: string): string {
-  const entities: { [key: string]: string } = {
-    "&amp;": "&",
-    "&lt;": "<",
-    "&gt;": ">",
-    "&quot;": '"',
-    "&#34;": '"',
-    "&apos;": "'",
-    "&#39;": "'",
-    "&#x27;": "'",
-    "&nbsp;": " ",
-    "&ndash;": "\u2013",
-    "&mdash;": "\u2014",
-    "&ldquo;": "\u201C",
-    "&rdquo;": "\u201D",
-    "&lsquo;": "\u2018",
-    "&rsquo;": "\u2019",
-    "&hellip;": "\u2026",
-  }
-
-  // Replace named entities
-  let decoded = text
-  for (const [entity, char] of Object.entries(entities)) {
-    decoded = decoded.replace(new RegExp(entity, "g"), char)
-  }
-
-  // Replace numeric entities (decimal)
-  decoded = decoded.replace(/&#(\d+);/g, (_, num) => {
-    return String.fromCharCode(parseInt(num, 10))
-  })
-
-  // Replace numeric entities (hexadecimal)
-  decoded = decoded.replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => {
-    return String.fromCharCode(parseInt(hex, 16))
-  })
-
-  return decoded
-}
-
-/**
- * Parse metadata from HTML content
- */
-function parseMetadata(html: string, baseUrl: string): MetadataResponse {
-  const metadata: MetadataResponse = {}
-
-  // Helper function to extract meta tag content
-  const getMetaContent = (property: string): string | null => {
-    const regex = new RegExp(
-      `<meta[^>]*(?:property|name)=["']${property}["'][^>]*content=["']([^"']*)["']`,
-      "i"
-    )
-    const match = html.match(regex)
-    return match ? decodeHtmlEntities(match[1]) : null
-  }
-
-  // Helper function to extract title tag
-  const getTitle = (): string | null => {
-    const titleMatch = html.match(/<title[^>]*>([^<]*)<\/title>/i)
-    return titleMatch ? decodeHtmlEntities(titleMatch[1].trim()) : null
-  }
-
-  // Extract Open Graph tags first (preferred)
-  metadata.title = getMetaContent("og:title") || getTitle() || undefined
-  metadata.description =
-    getMetaContent("og:description") || getMetaContent("description") || undefined
-
-  // Handle image URL - make it absolute if it's relative
-  const imageUrl = getMetaContent("og:image")
-  if (imageUrl) {
-    try {
-      // If it's already absolute, use as is
-      if (imageUrl.startsWith("http")) {
-        metadata.imageUrl = imageUrl
-      } else {
-        // Make relative URLs absolute
-        const baseUrlObj = new URL(baseUrl)
-        metadata.imageUrl = new URL(imageUrl, baseUrlObj.origin).href
-      }
-    } catch {
-      // If URL construction fails, skip the image
-    }
-  }
-
-  // Clean up extracted values
-  if (metadata.title) {
-    metadata.title = metadata.title.replace(/\s+/g, " ").trim()
-  }
-  if (metadata.description) {
-    metadata.description = metadata.description.replace(/\s+/g, " ").trim()
-  }
-
-  return metadata
 }

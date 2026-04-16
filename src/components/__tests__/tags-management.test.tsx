@@ -8,6 +8,7 @@ import { CategoryMenuItem } from "@/components/category-menu-item"
 import { TagsManagement } from "@/components/tags-management"
 import { SidebarMenu, SidebarProvider } from "@/components/ui/sidebar"
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest"
 
 afterEach(() => {
@@ -32,16 +33,18 @@ function renderCategoryRow() {
   )
 }
 
-function openTagActionsMenu() {
-  const trigger = screen.getByRole("button", { name: /actions for tag react/i })
-  // Radix DropdownMenuTrigger toggles on pointerdown, not click (jsdom click lacks pointer events).
-  fireEvent.pointerDown(trigger, { button: 0, ctrlKey: false })
+async function openTagActionsMenu(tagName: string) {
+  const user = userEvent.setup()
+  const trigger = screen.getByRole("button", {
+    name: new RegExp(`actions for tag ${tagName}`, "i"),
+  })
+  await user.click(trigger)
 }
 
 test("tag actions menu lists Rename and Delete", async () => {
   renderCategoryRow()
 
-  openTagActionsMenu()
+  await openTagActionsMenu("React")
 
   await waitFor(() => {
     expect(screen.getByRole("menuitem", { name: /^rename$/i })).toBeInTheDocument()
@@ -51,7 +54,7 @@ test("tag actions menu lists Rename and Delete", async () => {
 
 async function openDeleteDialogFromSidebar() {
   renderCategoryRow()
-  openTagActionsMenu()
+  await openTagActionsMenu("React")
   await waitFor(() => {
     expect(screen.getByRole("menuitem", { name: /^delete$/i })).toBeInTheDocument()
   })
@@ -138,8 +141,7 @@ describe("TagsManagement", () => {
       <TagsManagement initialCategories={[{ id: "row-cat", name: "Gamma", usageCount: 3 }]} />,
     )
 
-    const trigger = screen.getByRole("button", { name: /actions for tag gamma/i })
-    fireEvent.pointerDown(trigger, { button: 0, ctrlKey: false })
+    await openTagActionsMenu("Gamma")
     await waitFor(() => {
       expect(screen.getByRole("menuitem", { name: /^delete$/i })).toBeInTheDocument()
     })
